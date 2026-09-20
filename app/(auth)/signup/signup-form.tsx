@@ -3,8 +3,8 @@
 import { useFormState } from 'react-dom';
 
 import { signup, type AuthFormState } from '../actions';
-import { FieldError } from '../field-error';
-import { SubmitButton } from '../submit-button';
+import { FieldError } from '@/components/form/field-error';
+import { SubmitButton } from '@/components/form/submit-button';
 
 const initialState: AuthFormState = {};
 

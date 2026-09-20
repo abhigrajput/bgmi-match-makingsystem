@@ -61,6 +61,17 @@ import type { UUID } from '@/types/database';
  * sentence to show, and a form that silently renders nothing is the failure
  * mode this shape exists to prevent.
  */
+/**
+ * Every action takes `(_prevState, formData)` rather than `(formData)`.
+ *
+ * That is the signature `useFormState` requires -- it passes the previous
+ * result as the first argument so a form can keep rendering the last error
+ * while the next submit is in flight. None of these actions read it: the
+ * result is computed from the submitted data alone, and a decision made partly
+ * from stale state is the bug that shape invites. It is named with a leading
+ * underscore and ignored, exactly as app/(auth)/actions.ts does.
+ */
+
 export type ActionResult =
   | { ok: true }
   | {
@@ -361,7 +372,10 @@ function revalidateProfileViews(profileId: UUID) {
 // profiles
 // ---------------------------------------------------------------------------
 
-export async function updateProfile(formData: FormData): Promise<ActionResult> {
+export async function updateProfile(
+  _prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
   const parsed = updateProfileSchema.safeParse({
     display_name: formData.get('display_name') ?? '',
     bgmi_ign: formData.get('bgmi_ign') ?? '',
@@ -424,6 +438,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
  * statement.
  */
 export async function upsertPreferences(
+  _prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const parsed = preferencesSchema.safeParse({
@@ -490,6 +505,7 @@ export async function upsertPreferences(
 // ---------------------------------------------------------------------------
 
 export async function addAvailabilityWindow(
+  _prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const parsed = availabilityWindowSchema.safeParse({
@@ -548,6 +564,7 @@ export async function addAvailabilityWindow(
  * the window is gone.
  */
 export async function removeAvailabilityWindow(
+  _prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const parsed = removeAvailabilitySchema.safeParse({
