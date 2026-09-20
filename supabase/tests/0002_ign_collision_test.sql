@@ -83,15 +83,23 @@ begin
     -- does nothing on every path would still need ruling out, and a signup
     -- that succeeds without provisioning a profile is its own bug.
     -- =====================================================================
+    -- The column list is deliberately the minimum that exists in every version
+    -- of the auth schema. GoTrue adds columns over time (email_confirmed_at,
+    -- phone, banned_until, and more) through its own migrations, so naming any
+    -- of them couples this test to a GoTrue version and makes it fail against
+    -- a bare Postgres image for a reason that has nothing to do with the
+    -- trigger under test. Everything below is load-bearing: the trigger reads
+    -- id, email and raw_user_meta_data, and the rest are what make the row a
+    -- plausible account.
     insert into auth.users (
         id, instance_id, aud, role, email, encrypted_password,
-        email_confirmed_at, created_at, updated_at,
+        created_at, updated_at,
         raw_app_meta_data, raw_user_meta_data
     )
     values (
         v_uid_ok, '00000000-0000-0000-0000-000000000000',
         'authenticated', 'authenticated', k_email_free, 'not-a-real-hash',
-        now(), now(), now(),
+        now(), now(),
         '{"provider":"email","providers":["email"]}'::jsonb,
         jsonb_build_object('display_name', 'Free Name', 'bgmi_ign', k_ign_free)
     );
@@ -121,13 +129,13 @@ begin
     begin
         insert into auth.users (
             id, instance_id, aud, role, email, encrypted_password,
-            email_confirmed_at, created_at, updated_at,
+            created_at, updated_at,
             raw_app_meta_data, raw_user_meta_data
         )
         values (
             v_uid_collide, '00000000-0000-0000-0000-000000000000',
             'authenticated', 'authenticated', k_email_taken, 'not-a-real-hash',
-            now(), now(), now(),
+            now(), now(),
             '{"provider":"email","providers":["email"]}'::jsonb,
             jsonb_build_object('display_name', 'Latecomer', 'bgmi_ign', k_ign_contested)
         );
