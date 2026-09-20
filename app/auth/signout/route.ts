@@ -14,15 +14,11 @@ import { createClient } from '@/lib/supabase/server';
  * destructive write, but it is free to prevent and there is no reason to accept
  * a class of bug just because this instance of it is mild.
  *
- * The practical consequence is that this endpoint must be called from a form:
- *
- *   <form action="/auth/signout" method="post">
- *     <button type="submit">Sign out</button>
- *   </form>
- *
- * Nothing in the app calls it yet -- the Phase 2 dashboard is specified as
- * profile text and nothing else, so it renders no sign-out control. The route
- * is in place for the Phase 3 navigation.
+ * The practical consequence is that this endpoint must be called from a form
+ * rather than a link or a fetch. The dashboard's SignOutForm is the only
+ * caller today; Phase 3 navigation will add another. Both must keep using
+ * method="post" -- a GET link here would appear to work and would quietly
+ * reintroduce the CSRF above.
  */
 export async function POST(request: NextRequest) {
   const supabase = createClient();

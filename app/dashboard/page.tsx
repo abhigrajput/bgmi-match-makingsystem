@@ -10,18 +10,44 @@ export const metadata: Metadata = {
 /**
  * The authenticated profile, as plain text.
  *
- * Deliberately the whole of Phase 2's dashboard. There is no navigation, no
- * sign-out control, no stats and no queue -- those are later phases, and a
+ * Deliberately close to the whole of Phase 2's dashboard. There is no
+ * navigation, no stats and no queue -- those are later phases, and a
  * placeholder UI built now would be written against guesses about data this
  * phase has not produced yet. What this page is for is proving the chain end to
  * end: a session exists, it resolves to an auth user, that user has a profile
  * because the 0002 trigger made one, and the 0003 SELECT policy lets them read
  * it. If this renders, Phase 2 works.
  *
+ * The one control on the page is sign-out, which completes that chain rather
+ * than decorating it: without it there is no way to leave a session short of
+ * clearing cookies by hand, and no way to test signing in as a second account.
+ *
  * A server component, so the query runs on the server with the user's JWT and
  * the row arrives already rendered. There is no client-side fetch and no
  * loading state to manage.
  */
+
+/**
+ * Sign-out control.
+ *
+ * A plain HTML form, not a button with an onClick. /auth/signout is POST-only
+ * on purpose -- a sign-out reachable by GET can be triggered by any
+ * <img src="/auth/signout"> on any page on the internet -- and a form is how
+ * you issue a POST without shipping JavaScript to do it. This stays a server
+ * component, works with JS disabled, and needs no client bundle at all.
+ */
+function SignOutForm() {
+  return (
+    <form action="/auth/signout" method="post" className="mt-6">
+      <button
+        type="submit"
+        className="rounded border border-neutral-400 px-3 py-1.5 text-sm hover:bg-neutral-100"
+      >
+        Sign out
+      </button>
+    </form>
+  );
+}
 export default async function DashboardPage() {
   const supabase = createClient();
 
@@ -63,6 +89,9 @@ export default async function DashboardPage() {
       <main className="p-8 font-mono text-sm">
         <p>Could not load profile.</p>
         <p>{error.message}</p>
+        {/* Offered on the failure paths too: this page is a dead end without
+            it, and signing out and back in is the first thing worth trying. */}
+        <SignOutForm />
       </main>
     );
   }
@@ -87,6 +116,7 @@ export default async function DashboardPage() {
           Check that the on_auth_user_created trigger exists on auth.users
           (supabase/migrations/0002_triggers.sql).
         </p>
+        <SignOutForm />
       </main>
     );
   }
@@ -107,6 +137,7 @@ export default async function DashboardPage() {
           `updated_at:    ${profile.updated_at}`,
         ].join('\n')}
       </pre>
+      <SignOutForm />
     </main>
   );
 }
