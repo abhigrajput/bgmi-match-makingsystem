@@ -121,6 +121,7 @@ create table profiles (
 
     -- Column only in Phase 1. The trigger that maintains it is intentionally
     -- deferred to a behaviour migration -- this file installs structure only.
+    -- That trigger now exists: trg_profiles_set_updated_at, in 0002.
     updated_at        timestamptz not null default now(),
 
     -- Reject whitespace-only names, which pass NOT NULL but are unusable in UI.
@@ -630,7 +631,26 @@ create index idx_player_availability_day_of_week
 -- =============================================================================
 -- END 0001_init.sql
 --
--- Not applied. No RLS is enabled by this migration; enabling it before the
--- auth model exists would lock out every client including the seeding scripts.
--- RLS policies and the updated_at triggers both belong to Phase 2.
+-- STATUS: applied, and extended in Phase 2. This file alone is no longer an
+-- accurate description of the live database.
+--
+-- This migration enables no RLS and installs no triggers. That was deliberate,
+-- and the reasoning is kept here rather than deleted as stale: enabling RLS
+-- before an auth model existed would have locked out every client, including
+-- the seeding scripts, with no policy able to let anyone back in. The same
+-- applies to updated_at -- a column with no trigger, because the trigger had
+-- nothing to be consistent with yet.
+--
+-- Both gaps are closed as of Phase 2:
+--
+--   0002_triggers.sql  set_updated_at() on all 8 tables; handle_new_user()
+--                      provisioning the profiles row inside the signup
+--                      transaction.
+--   0003_rls.sql       RLS enabled on all 8 tables, 18 policies, plus
+--                      table- and column-level grants underneath them.
+--
+-- So the per-column notes above that describe something as unguarded or as
+-- "structure only" are true of THIS FILE, not of the database. Read 0001 for
+-- the shape of the schema; read 0002 and 0003 for how it behaves and who can
+-- reach it.
 -- =============================================================================
