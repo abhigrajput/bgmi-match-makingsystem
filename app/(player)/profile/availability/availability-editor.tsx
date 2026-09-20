@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useFormState } from 'react-dom';
 
 import { FieldError } from '@/components/form/field-error';
@@ -34,6 +35,15 @@ function RemoveWindowForm({ window }: { window: PlayerAvailability }) {
     removeAvailabilityWindow,
     initialState,
   );
+
+  /**
+   * This component deliberately does NOT notify the parent when its removal
+   * succeeds, though that was the obvious first design. It cannot: a successful
+   * removal deletes this row, so the parent re-renders without it and this
+   * component unmounts in the same commit that delivered the result. An effect
+   * watching for `state.ok` never runs -- the success destroys the thing that
+   * would report it. The parent watches the list length instead.
+   */
 
   const label = `${DAY_NAMES[window.day_of_week]} ${formatMinutes(
     window.start_minute,
@@ -77,8 +87,51 @@ export function AvailabilityEditor({
 }) {
   const [state, formAction] = useFormState(addAvailabilityWindow, initialState);
 
-  const fieldErrors = state && !state.ok ? state.fieldErrors : undefined;
-  const added = state?.ok === true;
+  /**
+   * The add form's banner, dismissed when a window disappears.
+   *
+   * The two forms hold independent `useFormState`, so without this the add
+   * form's last result survives a removal -- "You already have that exact
+   * window on that day" stays on screen after the duplicate has just been
+   * deleted. It is then not stale but false, and it reads as though the removal
+   * failed.
+   *
+   * The trigger is the list getting SHORTER, which is the only thing a removal
+   * can be observed by from here. Watching the list grow instead would dismiss
+   * the banner on a successful add and swallow "Window added."; watching it
+   * change at all would do both.
+   *
+   * Storing the dismissed RESULT rather than a boolean is what makes this
+   * self-resetting: the next submit produces a new object, `state` stops being
+   * the dismissed one, and the banner returns with no flag to clear. A boolean
+   * would need un-setting on every new result -- the half that gets forgotten.
+   *
+   * Adjusting state during render, rather than in an effect, is deliberate and
+   * is React's documented pattern for deriving from changed props. An effect
+   * would paint the false banner for one frame before removing it. It cannot
+   * live in RemoveWindowForm at all -- see the note there.
+   */
+  const [tracked, setTracked] = useState<{
+    count: number;
+    dismissed: ActionResult | null;
+  }>({ count: availability.length, dismissed: null });
+
+  if (tracked.count !== availability.length) {
+    setTracked({
+      count: availability.length,
+      dismissed:
+        availability.length < tracked.count ? state : tracked.dismissed,
+    });
+  }
+
+  const showBanner = state !== null && state !== tracked.dismissed;
+
+  // Gated on the same flag as the banner: the inline field errors come from
+  // that same result, so leaving them behind would keep a red "To" field under
+  // a dismissed message.
+  const fieldErrors =
+    showBanner && state && !state.ok ? state.fieldErrors : undefined;
+  const added = showBanner && state?.ok === true;
 
   const byDay = DAY_NAMES.map((name, day) => ({
     day,
@@ -94,7 +147,7 @@ export function AvailabilityEditor({
         </h2>
 
         <form action={formAction} noValidate className="space-y-4">
-          {state && !state.ok ? (
+          {showBanner && state && !state.ok ? (
             <p
               role="alert"
               className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
