@@ -3,6 +3,15 @@
 -- AI-Powered Skill-Based Multiplayer Team Matching & Squad Recommendation
 -- Phase 2, part 2: access control.
 --
+-- STATUS: applied. Run against the Supabase project in Phase 2, immediately
+-- after 0002_triggers.sql. Verified by supabase/tests/phase2_verify.sql, whose
+-- checks 6-14 assert both that the policies exist and that the write paths
+-- this file withholds are still absent.
+--
+-- RLS is live from this migration onward: the anon key can no longer read or
+-- write freely, and any process that needs to bypass policy -- the matcher,
+-- the ML service -- must authenticate as service_role.
+--
 -- Depends on: 0001_init.sql (tables), 0002_triggers.sql (handle_new_user owns
 -- the profiles INSERT that this file denies to clients).
 --

@@ -3,6 +3,11 @@
 -- AI-Powered Skill-Based Multiplayer Team Matching & Squad Recommendation
 -- Phase 2, part 1: behaviour. Functions and triggers only.
 --
+-- STATUS: applied. Run against the Supabase project in Phase 2, together with
+-- 0003_rls.sql. Verified by supabase/tests/phase2_verify.sql (object counts)
+-- and supabase/tests/0002_ign_collision_test.sql (the bgmi_ign rollback,
+-- confirmed against the project's own GoTrue version).
+--
 -- Depends on: 0001_init.sql (8 tables, 4 enums).
 --
 -- Contains: set_updated_at() + 8 triggers, handle_new_user() + 1 trigger on
