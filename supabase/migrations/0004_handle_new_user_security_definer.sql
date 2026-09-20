@@ -1,0 +1,87 @@
+-- =============================================================================
+-- 0004_handle_new_user_security_definer.sql
+-- AI-Powered Skill-Based Multiplayer Team Matching & Squad Recommendation
+-- Phase 3: repair of a Phase 2 defect.
+--
+-- STATUS: written 2026-09-20. Apply after 0003.
+--
+-- WHAT WAS WRONG
+--
+-- 0002 defines handle_new_user() with a long comment block stating that
+-- SECURITY DEFINER is mandatory, and explaining exactly why. The clause itself
+-- was never written. The function was created with the default, SECURITY
+-- INVOKER, and the comment has been describing an intention rather than the
+-- object ever since.
+--
+-- The consequence is that signup does not work at all. The trigger fires inside
+-- the transaction that creates the account, where the caller is
+-- supabase_auth_admin -- a role with no privileges on public.profiles, by
+-- design. As an INVOKER function the insert runs as that role and raises:
+--
+--   ERROR: permission denied for table profiles (SQLSTATE 42501)
+--
+-- which aborts the transaction, rolls back the auth.users insert, and returns
+-- GoTrue's generic "Database error saving new user" to the client.
+--
+-- HOW IT WENT UNNOTICED
+--
+-- Two ways, and both are worth recording.
+--
+-- phase2_verify.sql check 4 asserts precisely this property and reports FAIL.
+-- That file was committed but never run against a live database, so the check
+-- existed and the answer was never read. A verification script is not a check
+-- until something executes it.
+--
+-- And the failure is disguised at the application layer. The signup action in
+-- app/(auth)/actions.ts treats "Database error saving new user" as an IGN
+-- collision, because that string is GoTrue's wrapper for any exception this
+-- trigger raises and the IGN collision was the only failure the trigger was
+-- expected to raise by design. With the trigger unable to insert at all, every
+-- signup reported "That in-game name is already taken" -- for a name nobody
+-- held, on a database with zero rows in profiles.
+--
+-- WHY ALTER RATHER THAN A NEW BODY
+--
+-- ALTER FUNCTION changes the one property that is wrong and leaves the body,
+-- the pinned search_path and the EXECUTE revokes from 0002 untouched. Restating
+-- the whole function here would duplicate forty lines of logic into a second
+-- file, and the next person changing the IGN-collision handling would have two
+-- definitions to find and one to forget.
+--
+-- 0002 is not edited. It is marked applied, and rewriting an applied migration
+-- makes the file disagree with every database that already ran it. The comment
+-- there is now accurate only in combination with this file, which is what the
+-- note added to it in this commit says.
+--
+-- SECURITY NOTE
+--
+-- This grants the function owner's privileges to a function invoked by the auth
+-- subsystem, which is the entire point -- it is how the insert succeeds without
+-- giving supabase_auth_admin standing write access to application tables, and
+-- how it bypasses the 0003 policies that deny INSERT on profiles to everyone.
+--
+-- What makes that safe is already in place and deliberately not re-stated here:
+-- 0002 pins `search_path = public, pg_temp` on this function, so a caller
+-- cannot redirect the insert into a table of their own by putting a schema
+-- earlier on the path, and it revokes EXECUTE from PUBLIC, so no client can
+-- call it directly with a hand-built record. Both were verified present:
+-- phase2_verify.sql check 5 (pinned search_path) passes.
+-- =============================================================================
+
+alter function public.handle_new_user() security definer;
+
+
+-- =============================================================================
+-- VERIFICATION
+--
+-- After applying, phase2_verify.sql check 4 must report PASS:
+--
+--   select p.prosecdef from pg_proc p
+--   join pg_namespace n on n.oid = p.pronamespace
+--   where n.nspname = 'public' and p.proname = 'handle_new_user';
+--   -- must be t
+--
+-- And a signup through the application must create exactly one auth.users row
+-- and one profiles row. A green catalog check alone is not proof this worked:
+-- the catalog was the thing that was right in intent and wrong in fact.
+-- =============================================================================

@@ -156,6 +156,17 @@ create trigger trg_match_feedback_set_updated_at
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
+-- DEFECT, FIXED IN 0004: the clause the comment below calls mandatory is not
+-- in this definition. It was never written, so the function was created
+-- SECURITY INVOKER and every signup failed with 42501 (permission denied for
+-- table profiles) -- surfacing to the user as "That in-game name is already
+-- taken", because GoTrue wraps any exception from this trigger in a generic
+-- message the signup action attributes to an IGN collision.
+--
+-- 0004_handle_new_user_security_definer.sql repairs it with ALTER FUNCTION.
+-- This file is left as applied rather than edited, so it continues to match
+-- the databases that already ran it; read the two together.
+--
 -- SECURITY DEFINER is mandatory here, not a convenience. This function is
 -- invoked in the transaction that creates the account, at which point the
 -- caller is `supabase_auth_admin` -- a role that has no business holding write
