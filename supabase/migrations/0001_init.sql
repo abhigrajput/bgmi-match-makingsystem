@@ -3,8 +3,7 @@
 -- AI-Powered Skill-Based Multiplayer Team Matching & Squad Recommendation
 -- Phase 1 initial schema.
 --
--- STATUS: written, NOT executed. Do not run this against a live project until
---         the schema in docs/database.md has been reviewed and signed off.
+-- STATUS: applied. Run against the Supabase project in Phase 1.
 --
 -- Contains: 4 enum types, 8 tables, FK indexes, CHECK constraints.
 -- Contains no RLS policies, no triggers, no functions, no seed data --
