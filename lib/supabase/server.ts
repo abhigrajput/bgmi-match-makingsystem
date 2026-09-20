@@ -40,14 +40,25 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
  * singleton export here.
  */
 export function createClient() {
+  /**
+   * Read before the configuration check, and the order matters.
+   *
+   * `cookies()` is how a route announces that it is dynamic: calling it during
+   * static generation throws a signal that Next.js catches and treats as "this
+   * page cannot be prerendered". Putting the env check first means that on a
+   * build machine without the variables set, our own error is thrown before
+   * that signal is ever raised -- so Next never learns the route is dynamic,
+   * tries to prerender it, and the build fails with a prerender error naming
+   * the wrong problem.
+   */
+  const cookieStore = cookies();
+
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error(
       'Supabase server client is missing configuration. Set NEXT_PUBLIC_SUPABASE_URL ' +
         'and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see .env.example).',
     );
   }
-
-  const cookieStore = cookies();
 
   return createServerClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {

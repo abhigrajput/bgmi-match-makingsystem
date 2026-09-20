@@ -15,6 +15,17 @@
  *                               is NULL is different from a key that is absent,
  *                               and collapsing the two hides real bugs.
  *   - Columns with a DB default are optional on Insert, required on Row.
+ *   - Row and Insert shapes are declared with `type`, never `interface`.
+ *
+ * THAT LAST ONE IS LOAD-BEARING. postgrest-js requires every Row and Insert to
+ * satisfy `Record<string, unknown>`. TypeScript gives object *type aliases* an
+ * implicit index signature and deliberately does not give one to *interfaces*,
+ * because an interface can be reopened by declaration merging and so its key
+ * set is never final. An interface here therefore fails the library's
+ * structural check -- and the failure is silent: the schema falls back to
+ * `never`, and every query result in the app becomes `never` with the error
+ * reported at the call site ("Property 'id' does not exist on type 'never'"),
+ * nowhere near this file. Do not convert these back to interfaces.
  *
  * NOTE ON `numeric`: Postgres numeric is arbitrary-precision; JS number is a
  * double. Every numeric column here (kd_ratio, avg_damage, rates) is a small
@@ -122,7 +133,7 @@ export type Score0To100 = number;
 // profiles
 // ---------------------------------------------------------------------------
 
-export interface Profile {
+export type Profile = {
   id: UUID;
   /**
    * null     = synthetic seed profile (ML training data, no human behind it)
@@ -141,7 +152,7 @@ export interface Profile {
   updated_at: Timestamptz;
 }
 
-export interface ProfileInsert {
+export type ProfileInsert = {
   id?: UUID;
   auth_user_id?: UUID | null;
   display_name: string;
@@ -160,7 +171,7 @@ export type ProfileUpdate = Partial<ProfileInsert>;
 // player_stats -- 1:1 with profiles. Written by the ML service.
 // ---------------------------------------------------------------------------
 
-export interface PlayerStats {
+export type PlayerStats = {
   id: UUID;
   profile_id: UUID;
 
@@ -194,7 +205,7 @@ export interface PlayerStats {
   updated_at: Timestamptz;
 }
 
-export interface PlayerStatsInsert {
+export type PlayerStatsInsert = {
   id?: UUID;
   profile_id: UUID;
   kd_ratio?: number;
@@ -221,7 +232,7 @@ export type PlayerStatsUpdate = Partial<Omit<PlayerStatsInsert, 'profile_id'>>;
 // player_preferences -- 1:1 with profiles. Written by the user, never by ML.
 // ---------------------------------------------------------------------------
 
-export interface PlayerPreferences {
+export type PlayerPreferences = {
   id: UUID;
   profile_id: UUID;
   primary_role: PlayerRole;
@@ -239,7 +250,7 @@ export interface PlayerPreferences {
   updated_at: Timestamptz;
 }
 
-export interface PlayerPreferencesInsert {
+export type PlayerPreferencesInsert = {
   id?: UUID;
   profile_id: UUID;
   primary_role?: PlayerRole;
@@ -265,7 +276,7 @@ export type PlayerPreferencesUpdate = Partial<
 /** 0 = Sunday ... 6 = Saturday. Matches both JS getDay() and Postgres dow. */
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface PlayerAvailability {
+export type PlayerAvailability = {
   id: UUID;
   profile_id: UUID;
   day_of_week: DayOfWeek;
@@ -278,7 +289,7 @@ export interface PlayerAvailability {
   updated_at: Timestamptz;
 }
 
-export interface PlayerAvailabilityInsert {
+export type PlayerAvailabilityInsert = {
   id?: UUID;
   profile_id: UUID;
   day_of_week: DayOfWeek;
@@ -297,7 +308,7 @@ export type PlayerAvailabilityUpdate = Partial<
 // matchmaking_queue
 // ---------------------------------------------------------------------------
 
-export interface MatchmakingQueueEntry {
+export type MatchmakingQueueEntry = {
   id: UUID;
   /** UNIQUE -- a player is in the pool at most once. */
   profile_id: UUID;
@@ -338,7 +349,7 @@ export type MatchmakingQueueEntryChecked =
       matched_match_id: null;
     });
 
-export interface MatchmakingQueueInsert {
+export type MatchmakingQueueInsert = {
   id?: UUID;
   profile_id: UUID;
   state?: QueueState;
@@ -363,7 +374,7 @@ export type MatchmakingQueueUpdate = Partial<
 // matches
 // ---------------------------------------------------------------------------
 
-export interface Match {
+export type Match = {
   id: UUID;
   status: MatchStatus;
   map_name: string | null;
@@ -380,7 +391,7 @@ export interface Match {
   updated_at: Timestamptz;
 }
 
-export interface MatchInsert {
+export type MatchInsert = {
   id?: UUID;
   status?: MatchStatus;
   map_name?: string | null;
@@ -401,7 +412,7 @@ export type MatchUpdate = Partial<MatchInsert>;
 // match_participants
 // ---------------------------------------------------------------------------
 
-export interface MatchParticipant {
+export type MatchParticipant = {
   id: UUID;
   match_id: UUID;
   profile_id: UUID;
@@ -419,7 +430,7 @@ export interface MatchParticipant {
   updated_at: Timestamptz;
 }
 
-export interface MatchParticipantInsert {
+export type MatchParticipantInsert = {
   id?: UUID;
   match_id: UUID;
   profile_id: UUID;
@@ -442,7 +453,7 @@ export type MatchParticipantUpdate = Partial<
 /** 1-5, CHECK-constrained. 0 is excluded: "not rated" is an absent row. */
 export type FeedbackRating = 1 | 2 | 3 | 4 | 5;
 
-export interface MatchFeedback {
+export type MatchFeedback = {
   id: UUID;
   match_id: UUID;
   rater_profile_id: UUID;
@@ -456,7 +467,7 @@ export interface MatchFeedback {
   updated_at: Timestamptz;
 }
 
-export interface MatchFeedbackInsert {
+export type MatchFeedbackInsert = {
   id?: UUID;
   match_id: UUID;
   rater_profile_id: UUID;
@@ -484,6 +495,20 @@ export type MatchFeedbackUpdate = Partial<
 // sites: createClient<Database>(...) keeps working unchanged.
 // ---------------------------------------------------------------------------
 
+/**
+ * `Relationships: []` on every table is required, not decorative.
+ *
+ * postgrest-js checks the schema against its own `GenericTable`, which declares
+ * `Relationships: GenericRelationship[]`. Omitting the key does not produce an
+ * error at the type definition -- it makes the schema fail that structural
+ * check, and every query result silently degrades to `never`. The symptom is
+ * `Property 'id' does not exist on type 'never'` at the call site, a long way
+ * from the cause.
+ *
+ * Empty arrays are honest here: the arrays describe embedded-resource joins
+ * (`select('*, player_stats(*)')`), and Phase 2 issues none. Generated types
+ * will populate them from the real foreign keys when this file is replaced.
+ */
 export interface Database {
   public: {
     Tables: {
@@ -491,41 +516,49 @@ export interface Database {
         Row: Profile;
         Insert: ProfileInsert;
         Update: ProfileUpdate;
+        Relationships: [];
       };
       player_stats: {
         Row: PlayerStats;
         Insert: PlayerStatsInsert;
         Update: PlayerStatsUpdate;
+        Relationships: [];
       };
       player_preferences: {
         Row: PlayerPreferences;
         Insert: PlayerPreferencesInsert;
         Update: PlayerPreferencesUpdate;
+        Relationships: [];
       };
       player_availability: {
         Row: PlayerAvailability;
         Insert: PlayerAvailabilityInsert;
         Update: PlayerAvailabilityUpdate;
+        Relationships: [];
       };
       matchmaking_queue: {
         Row: MatchmakingQueueEntry;
         Insert: MatchmakingQueueInsert;
         Update: MatchmakingQueueUpdate;
+        Relationships: [];
       };
       matches: {
         Row: Match;
         Insert: MatchInsert;
         Update: MatchUpdate;
+        Relationships: [];
       };
       match_participants: {
         Row: MatchParticipant;
         Insert: MatchParticipantInsert;
         Update: MatchParticipantUpdate;
+        Relationships: [];
       };
       match_feedback: {
         Row: MatchFeedback;
         Insert: MatchFeedbackInsert;
         Update: MatchFeedbackUpdate;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
