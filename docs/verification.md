@@ -167,3 +167,30 @@ Final state, verified on production:
 | Organiser UI on the live site | "You are an organiser" note and **Form squads** button visible on `/tournaments/hubballi-weekend-cup` in the owner's session |
 | Unused invited account | organiser revoked, then deleted at the owner's request (never signed in; 0 registrations, matches or feedback); profile row removed by cascade |
 | Auth users on production | 1 |
+
+## Production: walkthrough after organiser assignment, 2026-09-21
+
+`scripts/walkthrough-prod.ts` rerun against the live site after the organiser
+changes above: **20/20** steps passed. A temporary account (random password,
+never printed) was refused with **403** when forming squads as a non-organiser,
+then, once promoted with the service role, formed 13 ML-scored squads with
+reasons, completed its match, saved feedback, and loaded the dashboard,
+tournament, match, leaderboard and analytics pages. Formation metrics were
+unchanged from earlier runs:
+
+| Metric | Optimizer | Rank-only |
+|---|---|---|
+| Squads formed | 13 | 14 |
+| Mean squad score (×100) | 95.2 | 75.5 |
+| Vetoed pairs seated together | 0 | 18 |
+| Role coverage | 96% | 88% |
+| Mean rating spread | 9.8 | 3.6 |
+
+Production state afterwards, read back with the service role:
+
+| Item | Result |
+|---|---|
+| Auth users | 1 (the owner; the temporary account was deleted) |
+| Organisers | 1 (`vsdzvergsver`) |
+| Tournaments | all 3 open (demo reset after the run) |
+| Matches | 600 (seeded history; the run's squads were removed by the reset) |
