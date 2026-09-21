@@ -12,8 +12,8 @@ player model with hard constraints, and explain each squad.
 
 **2. Why not just use a skill rating like Elo?**
 Elo estimates *how good* a player is, not *how well two players fit*. Our
-rank-only baseline is exactly "group by rating", and on the demo tournament it
-seated 17 incompatible pairs together; the optimiser seated none.
+rank-only baseline is exactly "group by rating", and on the production demo
+tournament it seated 18 incompatible pairs together; the optimiser seated none.
 
 **3. What is a "player vector"?**
 `lib/scoring/types.ts` `PlayerVector`: overall rating and five skill axes,

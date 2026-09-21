@@ -125,15 +125,15 @@ label formula ([why](docs/ml.md#4-why-the-labels-are-not-circular)).
 
 ## Optimizer vs rank-only
 
-Hubballi Weekend Cup, 58 registered players ([`docs/verification.md`](docs/verification.md)):
+Hubballi Weekend Cup on production, 58 registered players ([`docs/verification.md`](docs/verification.md)):
 
 | Metric | Optimizer | Rank-only |
 |---|---|---|
 | Squads | 13 | 14 |
-| Mean squad score (×100) | **95.1** | 76.9 |
-| Vetoed pairs seated together | **0** | 17 |
-| Role coverage | **96%** | 89% |
-| Mean rating spread | 10.0 | **3.9** |
+| Mean squad score (×100) | **95.2** | 75.5 |
+| Vetoed pairs seated together | **0** | 18 |
+| Role coverage | **96%** | 88% |
+| Mean rating spread | 9.8 | **3.6** |
 
 ## Security
 

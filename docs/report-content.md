@@ -25,7 +25,7 @@ blended with the rule score. A deterministic greedy optimiser with swap-based
 local search builds squads and explains each one. On a held-out test set of
 1,440 player pairs the model reached ROC-AUC 0.783 against 0.723 for the rule
 engine alone and 0.739 for rating proximity; on a 58-player demo tournament the
-optimiser seated no incompatible pairs, where rank-only grouping seated 17.
+optimiser seated no incompatible pairs, where rank-only grouping seated 18.
 The system is implemented in Next.js and TypeScript on Supabase (PostgreSQL)
 with row-level security and is deployed on Vercel.
 
@@ -212,15 +212,15 @@ Five-fold match-grouped cross-validation: F1 0.798 ± 0.012, ROC-AUC 0.804 ±
 the label-generating process, received near-zero weight — evidence that the
 model recovered the real structure rather than noise.
 
-**Squad formation (Hubballi Weekend Cup, 58 registered players):**
+**Squad formation (Hubballi Weekend Cup on production, 58 registered players):**
 
 | Metric | Optimiser | Rank-only |
 |---|---|---|
 | Squads | 13 | 14 |
-| Mean squad score (×100) | 95.1 | 76.9 |
-| Vetoed pairs seated together | 0 | 17 |
-| Role coverage | 96% | 89% |
-| Mean rating spread | 10.0 | 3.9 |
+| Mean squad score (×100) | 95.2 | 75.5 |
+| Vetoed pairs seated together | 0 | 18 |
+| Role coverage | 96% | 88% |
+| Mean rating spread | 9.8 | 3.6 |
 
 The optimiser trades a slightly wider rating spread and one fewer squad for
 the elimination of every incompatible pairing.

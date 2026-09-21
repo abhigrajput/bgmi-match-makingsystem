@@ -66,7 +66,57 @@ construction; it does so by seating 17 vetoed pairs together.
 
 81/81 passed (`npx vitest run`).
 
-## Production (hosted Supabase)
+## Production (hosted Supabase), 2026-09-21
 
-Pending: migration 0005 has been handed off for the SQL Editor. This section is
-filled in from `scripts/verify-prod.ts --target prod` once it is applied.
+Migration 0005 was pasted into the hosted SQL Editor by the project owner, then
+verified from this machine through the REST API only.
+
+### REST: `scripts/verify-prod.ts --target prod`
+
+14/14 checks passed (same checks as local). Row counts before seeding:
+1 profile (the owner's real account), every other table 0.
+
+### Seed: `scripts/seed.ts --target prod`
+
+| Table | Total | is_seed |
+|---|---|---|
+| profiles | 201 | 200 |
+| player_stats | 200 | 200 |
+| player_preferences | 200 | 200 |
+| player_availability | 648 | 648 |
+| tournaments | 3 | 3 |
+| tournament_registrations | 181 | 181 |
+| matches | 600 | 600 |
+| match_participants | 2400 | 2400 |
+| match_feedback | 7200 | 7200 |
+
+The one non-seed profile is the owner's account, untouched.
+
+### Train: `scripts/train.ts --target prod`
+
+Model `lr-20260921T0926`, active in `model_versions`. Test AUC 0.783 (rule-based
+0.723, rank-only 0.739, majority 0.500); 5-fold CV AUC 0.804 ± 0.014. Identical
+to the local run, as expected: seed and split are deterministic. Full tables in
+[`ml-results.md`](ml-results.md).
+
+### Live walkthrough: `scripts/walkthrough-prod.ts`
+
+19/19 steps passed against https://bgmi-match-makingsystem.vercel.app with a
+temporary account (random password, never printed, deleted at the end):
+sign-in, landing stats, dashboard, tournament page, register under RLS, form
+squads (13, all ML scored, reasons present), tournament page shows squads
+formed, match page, mark completed, feedback saved and shown, leaderboard,
+analytics with model metrics, reset demo, account deleted.
+
+Formation on production (Hubballi Weekend Cup, 58 registered, 6 unplaced):
+
+| Metric | Optimizer | Rank-only |
+|---|---|---|
+| Squads formed | 13 | 14 |
+| Mean squad score (×100) | 95.2 | 75.5 |
+| Vetoed pairs seated together | 0 | 18 |
+| Role coverage | 96% | 88% |
+| Mean rating spread | 9.8 | 3.6 |
+
+`npx vercel logs` for the deployment during the walkthrough: 12 requests, all
+info level, no errors. The demo tournament was reset afterwards and is open.

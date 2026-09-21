@@ -70,8 +70,8 @@ and `docs/database.md`. Numbers are from `docs/ml-results.md` and
 - *Visual:* metrics table from `/analytics` (`12-analytics.png`)
 
 **12. Optimiser vs rank-only**
-- 0 vetoed pairs vs 17
-- Squad score 95.1 vs 76.9; role coverage 96% vs 89%
+- 0 vetoed pairs vs 18
+- Squad score 95.2 vs 75.5; role coverage 96% vs 88%
 - Rank-only wins rating spread — by construction
 - *Visual:* comparison tab (`09-comparison.png`)
 
