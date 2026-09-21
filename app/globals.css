@@ -45,6 +45,16 @@
   --chart-2: #c27d08; /* baseline / comparison series */
   --chart-grid: rgb(38 43 54);
   --chart-axis: rgb(138 145 160);
+
+  /* Role colours for CHARTS only (the donut). The UI role tokens above fail
+     as a chart palette -- sniper cyan and support green sit 12 ΔE apart -- so
+     charts use validated steps from the same hue families. Badges keep the
+     UI tokens: they always carry an icon and a label as well. */
+  --chart-role-igl: #9085e9;
+  --chart-role-assaulter: #e66767;
+  --chart-role-sniper: #3987e5;
+  --chart-role-support: #199e70;
+  --chart-role-flex: #c98500;
 }
 
 @media (prefers-color-scheme: light) {
@@ -78,6 +88,12 @@
     --chart-2: #c47600;
     --chart-grid: rgb(222 226 232);
     --chart-axis: rgb(88 96 112);
+
+    --chart-role-igl: #4a3aa7;
+    --chart-role-assaulter: #e34948;
+    --chart-role-sniper: #2a78d6;
+    --chart-role-support: #1baf7a;
+    --chart-role-flex: #eda100;
   }
 }
 

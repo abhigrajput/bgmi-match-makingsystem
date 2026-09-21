@@ -45,13 +45,14 @@ export const ROLE_BADGE_CLASS: Record<PlayerRole, string> = {
 };
 
 /**
- * Raw colours for recharts, which paints SVG fills from props and cannot read
- * a Tailwind class. CSS variables still work there, so the light theme holds.
+ * Fills for recharts, which paints SVG from props and cannot read a Tailwind
+ * class. These are the validated --chart-role-* steps, not the UI tokens: see
+ * the note in globals.css on why the badge colours fail as a chart palette.
  */
 export const ROLE_CHART_COLOR: Record<PlayerRole, string> = {
-  igl: 'rgb(var(--role-igl))',
-  assaulter: 'rgb(var(--role-assaulter))',
-  sniper: 'rgb(var(--role-sniper))',
-  support: 'rgb(var(--role-support))',
-  flex: 'rgb(var(--role-flex))',
+  igl: 'var(--chart-role-igl)',
+  assaulter: 'var(--chart-role-assaulter)',
+  sniper: 'var(--chart-role-sniper)',
+  support: 'var(--chart-role-support)',
+  flex: 'var(--chart-role-flex)',
 };
