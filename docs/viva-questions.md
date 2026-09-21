@@ -185,7 +185,7 @@ signal (role badges carry icons and labels), chart palette validated for CVD.
 
 **38. How is the project tested?**
 81 unit tests, a 24-check catalog script, a 14-check REST verifier and a
-36-check end-to-end script that attempts RLS violations; CI on every push.
+39-check end-to-end script that attempts RLS violations; CI on every push.
 
 **39. What are the main limitations?**
 Synthetic training data; one global organiser role rather than per-tournament

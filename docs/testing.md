@@ -29,11 +29,13 @@ same pools.
 
 Needs the local Supabase stack, `scripts/seed.ts --target local`,
 `scripts/demo-user.ts --target local`, and `npm run dev`. Signs in through
-`@supabase/ssr` exactly as the browser does and drives 36 checks: six pages,
+`@supabase/ssr` exactly as the browser does and drives 39 checks: six pages,
 signed-out redirect, registration through PostgREST under RLS, the attack
 attempts (register someone else, anon reads, changing tournament status,
 deactivating the model, anon analytics, client-set `is_seed`, duplicate
-registration, withdrawing after formation, forged feedback), squad formation,
+registration, withdrawing after formation, forged feedback, promoting yourself
+to organiser), the organiser gate (403 for a non-organiser on form and reset),
+squad formation,
 409 on a second formation, squads read-back, optimizer vs baseline, match
 completion, feedback, the Phase H pages and demo reset.
 

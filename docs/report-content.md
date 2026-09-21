@@ -191,7 +191,7 @@ through the REST API by `scripts/verify-prod.ts`.
 vetoes, the optimiser's invariants (no vetoed pair, no duplicate player,
 determinism, beats the baseline on a fixed fixture), the model and its
 fallback, and the API routes' status codes and rollback. A 24-check catalog
-script verifies the schema, and a 36-check end-to-end script exercises pages,
+script verifies the schema, and a 39-check end-to-end script exercises pages,
 API routes and attempted policy violations with a real session. CI runs type
 checking, linting, tests and a production build on every push.
 

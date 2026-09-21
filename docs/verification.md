@@ -194,3 +194,23 @@ Production state afterwards, read back with the service role:
 | Organisers | 1 (`vsdzvergsver`) |
 | Tournaments | all 3 open (demo reset after the run) |
 | Matches | 600 (seeded history; the run's squads were removed by the reset) |
+
+## Local: end-to-end with organiser checks, 2026-09-21
+
+`scripts/e2e-local.ts` against a fresh local dev server: **39/39** passed. The
+three checks added with 0006:
+
+```
+PASS  Player cannot make themselves an organiser  (42501)
+PASS  Non-organiser cannot form squads (403)  (status 403)
+PASS  Non-organiser cannot reset (403)  (status 403)
+```
+
+Every earlier check still passed. Formation on the local Hubballi Weekend Cup:
+13 squads, 0 vetoed pairs vs 17 for rank-only, mean squad score 95.1 vs 76.9.
+
+A first attempt on the already-running dev server failed 7 checks with HTTP
+500 ("Jest worker encountered 2 child process exceptions"): its page-compile
+workers had crashed with about 2 GB of RAM free, so routes changed that day
+could not be compiled. A restarted dev server passed everything, so the
+failures were environmental, not code.

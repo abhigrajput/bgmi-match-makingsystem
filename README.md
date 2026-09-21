@@ -186,7 +186,7 @@ npm run dev
 npm test                                          # 84 unit tests
 npx tsx scripts/verify-prod.ts --target local     # schema through REST
 npx tsx scripts/demo-user.ts --target local
-npx tsx scripts/e2e-local.ts                      # 36 end-to-end checks (dev server running)
+npx tsx scripts/e2e-local.ts                      # 39 end-to-end checks (dev server running)
 ```
 
 CI runs typecheck, lint, tests and build on every push. See
