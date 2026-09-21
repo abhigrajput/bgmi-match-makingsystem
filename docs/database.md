@@ -318,3 +318,95 @@ rather than an oversight:
 | Every 0–100 column carries a CHECK | These columns feed arithmetic in the scorer. An out-of-range value yields a plausible-looking wrong answer rather than an error, so the database is the right place to stop it. |
 | Every FK column is indexed | Postgres indexes the referenced PK automatically, never the referencing column. Without these, cascade deletes and every join fall back to sequential scans. |
 | `matchmaking_queue(state)` indexed | The matcher's hot path is `WHERE state = 'waiting'`. It is the only predicate in the schema known in advance to run continuously. |
+
+---
+
+## 5. Migration 0005: tournaments and ML
+
+`supabase/migrations/0005_tournaments_and_ml.sql` adds everything the tournament
+and model features need in one migration, because production has no CLI path:
+each migration is a manual paste into the SQL Editor (see
+[`deployment.md`](deployment.md)). It was designed complete up front so there
+is exactly one handoff.
+
+```mermaid
+erDiagram
+    profiles ||--o{ tournament_registrations : registers
+    tournaments ||--o{ tournament_registrations : has
+    tournaments ||--o{ matches : "forms (tournament_id)"
+    matches ||--o{ match_participants : seats
+    profiles ||--o{ match_participants : plays
+    matches ||--o{ match_feedback : rated_in
+    profiles ||--|| player_stats : measured_by
+    profiles ||--o| player_preferences : declares
+    profiles ||--o{ player_availability : available
+
+    tournaments {
+        uuid id PK
+        text slug UK "^[a-z0-9-]{3,60}$"
+        smallint squad_size "2-4"
+        timestamptz starts_at
+        timestamptz registration_closes_at "<= starts_at"
+        tournament_status status "draft|open|matched|completed"
+        jsonb formation_summary "last formation result"
+        boolean is_seed
+    }
+    tournament_registrations {
+        uuid tournament_id FK
+        uuid profile_id FK
+        player_role desired_role "nullable"
+        boolean is_seed
+    }
+    model_versions {
+        text version UK
+        jsonb metrics
+        jsonb baselines
+        jsonb feature_importance
+        boolean is_active "at most one true"
+    }
+```
+
+### 5.1 New tables
+
+| Table | Purpose | Key constraints |
+|---|---|---|
+| `tournaments` | An event players register for | slug format CHECK, squad size 2–4, registration closes before start, `set_updated_at` trigger |
+| `tournament_registrations` | The formation pool | UNIQUE (tournament, player) — a double-click is a 23505, not a duplicate seat |
+| `model_versions` | One row per training run | partial UNIQUE index on `is_active` — at most one active model |
+
+`tournaments.formation_summary` stores the optimizer-vs-baseline comparison and
+the unmatched players with their blocking reasons *as they were at formation
+time*, so the Comparison tab and `/analytics` report what happened rather than
+re-running formation on today's data.
+
+### 5.2 New columns
+
+- `matches.tournament_id` (FK, `ON DELETE SET NULL`), `squad_score_components`
+  (jsonb), `reasons` (text[]): the explanation is stored with the squad.
+- `is_seed boolean` on the seven existing tables and both new data tables.
+  Synthetic rows can be deleted without touching anything a real account made.
+  A `guard_is_seed()` trigger on the four client-writable tables pins the value
+  for the `authenticated`/`anon` roles — otherwise a player could flag their own
+  preferences as seed data and have them wiped by the next reseed.
+
+### 5.3 Read surfaces
+
+| Object | Kind | Why |
+|---|---|---|
+| `leaderboard_v` | definer view, 9 columns | The leaderboard needs every player's primary role; 0003 keeps `player_preferences` owner-only. The view exposes `primary_role` and nothing else from it. Granted to `authenticated` only — never `anon`. |
+| `public_stats()` | `SECURITY DEFINER`, stable | Three counts for the anonymous landing page. Granted to `anon`. |
+| `analytics_overview()` | `SECURITY DEFINER`, stable | Aggregates for `/analytics` (counts, averages, histograms). Pages cannot see other players' matches and may not use the service role, so the aggregation happens in SQL. Returns no ids or names. |
+
+All three functions pin `search_path`. Supabase grants `EXECUTE` on new
+functions to `anon` and `authenticated` directly, so each is revoked from
+`public, anon, authenticated` and re-granted explicitly — found when
+`phase_b_verify.sql` check 22 failed on the first local apply.
+
+### 5.4 Policies
+
+Five new policies (23 total), each with a comment in the migration naming the
+attack it blocks. Summary in [`security.md`](security.md).
+
+`supabase/tests/phase_b_verify.sql` checks all of the above from the catalog
+(24 checks); `phase2_verify.sql` now reports stale counts (8 tables, 18
+policies), which is expected after 0005.

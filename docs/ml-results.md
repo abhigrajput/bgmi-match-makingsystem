@@ -23,7 +23,7 @@ F1-tuned threshold collapses to "always positive" at this class balance).
 |---|---|---|---|---|---|
 | Logistic regression | 0.724 | 0.734 | 0.830 | 0.779 | 0.783 |
 | Rule-based pairScore | 0.697 | 0.744 | 0.739 | 0.741 | 0.723 |
-| Rank-only (|Δrating| < 10) | 0.625 | 0.797 | 0.486 | 0.604 | 0.739 |
+| Rank-only (rating gap < 10) | 0.625 | 0.797 | 0.486 | 0.604 | 0.739 |
 | Majority class (always 1) | 0.588 | 0.588 | 1.000 | 0.740 | 0.500 |
 
 Confusion matrix (logistic regression, test set):

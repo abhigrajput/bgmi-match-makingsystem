@@ -1,0 +1,39 @@
+# Install, typecheck, lint, test, build -- the same four gates every phase of
+# this project had to pass locally before committing.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Placeholders so `next build` can compile. No page is prerendered
+      # against Supabase at build time, so no real project is contacted, and
+      # no secret is needed or present in CI.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit --incremental false
+      - name: Lint
+        run: npx next lint
+      - name: Test
+        run: npx vitest run
+      - name: Build
+        run: npx next build

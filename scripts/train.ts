@@ -284,7 +284,7 @@ F1-tuned threshold collapses to "always positive" at this class balance).
 |---|---|---|---|---|---|
 ${row('Logistic regression', modelMetrics)}
 ${row('Rule-based pairScore', ruleMetrics)}
-${row(`Rank-only (|Δrating| < ${RANK_ONLY_GAP})`, rankMetrics)}
+${row(`Rank-only (rating gap < ${RANK_ONLY_GAP})`, rankMetrics)}
 ${row(`Majority class (always ${majority})`, majorityMetrics)}
 
 Confusion matrix (logistic regression, test set):
