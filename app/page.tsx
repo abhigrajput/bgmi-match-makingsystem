@@ -1,20 +1,70 @@
 /**
  * Landing page.
  *
- * Phase 1: this is the only route. It states the problem and the approach in
- * plain text. It is deliberately not a dashboard, not a marketing page, and it
- * fetches nothing -- there is no database connection in this phase, so any
- * number shown here would be invented.
+ * States the problem and the approach in plain text, with the entry points to
+ * the app above them. The only thing it reads is whether a session exists, so
+ * a signed-in visitor gets one way forward instead of two forms that would
+ * just redirect them.
  */
 
-export default function HomePage() {
+import Link from 'next/link';
+
+import { createClient } from '@/lib/supabase/server';
+
+const primaryButton =
+  'rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700';
+const secondaryButton =
+  'rounded border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-100';
+
+// The try/catch below would also swallow the signal cookies() throws to mark a
+// route dynamic, and Next would prerender this page once as signed out. Opting
+// out of static rendering explicitly keeps the button per-request.
+export const dynamic = 'force-dynamic';
+
+/**
+ * Whether the request carries a valid session.
+ *
+ * getUser(), not getSession(), for the same reason as the login page: only
+ * getUser() revalidates the cookie against the auth server. createClient()
+ * throws when Supabase is not configured; the landing page should still render
+ * in that state, so it is treated as signed out rather than surfaced as a 500.
+ */
+async function isSignedIn(): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user !== null;
+  } catch {
+    return false;
+  }
+}
+
+export default async function HomePage() {
+  const signedIn = await isSignedIn();
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <header className="border-b border-neutral-300 pb-6">
-        <p className="text-xs uppercase tracking-widest text-neutral-500">
-          Phase 1 &middot; Architecture and foundation
-        </p>
-        <h1 className="mt-3 text-2xl font-semibold text-neutral-900">
+      <nav className="flex justify-end gap-3">
+        {signedIn ? (
+          <Link href="/dashboard" className={primaryButton}>
+            Go to dashboard
+          </Link>
+        ) : (
+          <>
+            <Link href="/login" className={secondaryButton}>
+              Log in
+            </Link>
+            <Link href="/signup" className={primaryButton}>
+              Sign up
+            </Link>
+          </>
+        )}
+      </nav>
+
+      <header className="mt-8 border-b border-neutral-300 pb-6">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Skill-Based Squad Recommendation System
         </h1>
         <p className="mt-2 text-sm text-neutral-600">
@@ -101,37 +151,6 @@ export default function HomePage() {
           same data. Every match records which of the two produced it, so the
           learned path and the rule-based path stay comparable.
         </p>
-      </section>
-
-      <section className="mt-10">
-        <h2 className="text-base font-semibold text-neutral-900">
-          Current state
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-neutral-700">
-          This phase covers structure only: the folder boundaries, the
-          architecture and database documents, the initial schema migration
-          (written, not applied), and the TypeScript types describing it. There
-          is no authentication, no database connection, no matchmaking queue,
-          and no model. This page is the entire user interface.
-        </p>
-        <ul className="mt-5 space-y-2 text-sm leading-6 text-neutral-700">
-          <li>
-            <code className="text-xs text-neutral-900">
-              docs/architecture.md
-            </code>{' '}
-            &mdash; system context, why two runtimes, fallback path
-          </li>
-          <li>
-            <code className="text-xs text-neutral-900">docs/database.md</code>{' '}
-            &mdash; ER diagram and table-by-table rationale
-          </li>
-          <li>
-            <code className="text-xs text-neutral-900">
-              supabase/migrations/0001_init.sql
-            </code>{' '}
-            &mdash; eight tables, unapplied
-          </li>
-        </ul>
       </section>
 
       <footer className="mt-16 border-t border-neutral-300 pt-6">
