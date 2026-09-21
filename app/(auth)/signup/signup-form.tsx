@@ -5,6 +5,7 @@ import { useFormState } from 'react-dom';
 import { signup, type AuthFormState } from '../actions';
 import { FieldError } from '@/components/form/field-error';
 import { SubmitButton } from '@/components/form/submit-button';
+import { fieldClass } from '@/components/ui/input';
 
 const initialState: AuthFormState = {};
 
@@ -29,7 +30,7 @@ export function SignupForm() {
     return (
       <p
         role="status"
-        className="rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900"
+        className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
       >
         {state.notice}
       </p>
@@ -41,14 +42,14 @@ export function SignupForm() {
       {state.formError ? (
         <p
           role="alert"
-          className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className="rounded-input border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger"
         >
           {state.formError}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="display_name" className="block text-sm font-medium">
+        <label htmlFor="display_name" className="mb-1.5 block text-sm font-medium text-fg">
           Display name
         </label>
         <input
@@ -64,9 +65,9 @@ export function SignupForm() {
               : 'display_name-hint'
           }
           aria-invalid={state.fieldErrors?.display_name ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
-        <p id="display_name-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="display_name-hint" className="mt-1 text-xs text-muted">
           Shown to other players. You can change this later.
         </p>
         <FieldError
@@ -76,7 +77,7 @@ export function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="bgmi_ign" className="block text-sm font-medium">
+        <label htmlFor="bgmi_ign" className="mb-1.5 block text-sm font-medium text-fg">
           BGMI in-game name
         </label>
         <input
@@ -89,9 +90,9 @@ export function SignupForm() {
             state.fieldErrors?.bgmi_ign ? 'bgmi_ign-error' : 'bgmi_ign-hint'
           }
           aria-invalid={state.fieldErrors?.bgmi_ign ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
-        <p id="bgmi_ign-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="bgmi_ign-hint" className="mt-1 text-xs text-muted">
           Must match your name in BGMI exactly — it is how your matches are
           linked to this account. Must be unique.
         </p>
@@ -99,7 +100,7 @@ export function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium">
+        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-fg">
           Email
         </label>
         <input
@@ -111,13 +112,13 @@ export function SignupForm() {
           defaultValue={state.values?.email ?? ''}
           aria-describedby={state.fieldErrors?.email ? 'email-error' : undefined}
           aria-invalid={state.fieldErrors?.email ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
         <FieldError id="email-error" messages={state.fieldErrors?.email} />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium">
+        <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-fg">
           Password
         </label>
         <input
@@ -130,9 +131,9 @@ export function SignupForm() {
             state.fieldErrors?.password ? 'password-error' : 'password-hint'
           }
           aria-invalid={state.fieldErrors?.password ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
-        <p id="password-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="password-hint" className="mt-1 text-xs text-muted">
           At least 8 characters.
         </p>
         <FieldError id="password-error" messages={state.fieldErrors?.password} />

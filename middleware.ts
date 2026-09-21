@@ -33,7 +33,15 @@ import { redirectWithSession, updateSession } from '@/lib/supabase/middleware';
  * it is covered by one entry, and so that adding a section is a one-line
  * change that reads as a statement of policy.
  */
-const PROTECTED_PREFIXES = ['/dashboard'];
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/tournaments',
+  '/players',
+  '/leaderboard',
+  '/matches',
+  '/analytics',
+  '/profile',
+];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(

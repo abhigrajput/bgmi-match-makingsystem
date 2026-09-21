@@ -5,6 +5,7 @@ import { useFormState } from 'react-dom';
 import { login, type AuthFormState } from '../actions';
 import { FieldError } from '@/components/form/field-error';
 import { SubmitButton } from '@/components/form/submit-button';
+import { fieldClass } from '@/components/ui/input';
 
 const initialState: AuthFormState = {};
 
@@ -29,14 +30,14 @@ export function LoginForm() {
       {state.formError ? (
         <p
           role="alert"
-          className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className="rounded-input border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger"
         >
           {state.formError}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium">
+        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-fg">
           Email
         </label>
         <input
@@ -48,13 +49,13 @@ export function LoginForm() {
           defaultValue={state.values?.email ?? ''}
           aria-describedby={state.fieldErrors?.email ? 'email-error' : undefined}
           aria-invalid={state.fieldErrors?.email ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
         <FieldError id="email-error" messages={state.fieldErrors?.email} />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium">
+        <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-fg">
           Password
         </label>
         {/*
@@ -72,7 +73,7 @@ export function LoginForm() {
             state.fieldErrors?.password ? 'password-error' : undefined
           }
           aria-invalid={state.fieldErrors?.password ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
         <FieldError id="password-error" messages={state.fieldErrors?.password} />
       </div>

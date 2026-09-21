@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { Banner } from '@/components/form/banner';
 import { createClient } from '@/lib/supabase/server';
 
 import { LoginForm } from './login-form';
@@ -48,25 +49,22 @@ export default async function LoginPage({
 
   return (
     <>
-      <h1 className="text-xl font-semibold">Sign in</h1>
-      <p className="mb-6 mt-1 text-sm text-neutral-600">
-        Squad Recommendation System
+      <h1 className="text-xl font-semibold text-fg">Sign in</h1>
+      <p className="mb-6 mt-1 text-sm text-muted">
+        Welcome back. Your squads are waiting.
       </p>
 
       {calloutError ? (
-        <p
-          role="alert"
-          className="mb-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
-        >
+        <Banner tone="info" className="mb-4">
           {calloutError}
-        </p>
+        </Banner>
       ) : null}
 
       <LoginForm />
 
-      <p className="mt-6 text-sm text-neutral-600">
+      <p className="mt-6 text-sm text-muted">
         No account?{' '}
-        <Link href="/signup" className="underline">
+        <Link href="/signup" className="font-medium text-data hover:underline">
           Create one
         </Link>
         .

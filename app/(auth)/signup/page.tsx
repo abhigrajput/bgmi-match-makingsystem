@@ -25,16 +25,16 @@ export default async function SignupPage() {
 
   return (
     <>
-      <h1 className="text-xl font-semibold">Create an account</h1>
-      <p className="mb-6 mt-1 text-sm text-neutral-600">
-        Squad Recommendation System
+      <h1 className="text-xl font-semibold text-fg">Create an account</h1>
+      <p className="mb-6 mt-1 text-sm text-muted">
+        Set up your player profile in under a minute.
       </p>
 
       <SignupForm />
 
-      <p className="mt-6 text-sm text-neutral-600">
+      <p className="mt-6 text-sm text-muted">
         Already have an account?{' '}
-        <Link href="/login" className="underline">
+        <Link href="/login" className="font-medium text-data hover:underline">
           Sign in
         </Link>
         .

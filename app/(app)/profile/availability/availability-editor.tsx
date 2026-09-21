@@ -13,6 +13,8 @@ import {
   formatMinutes,
 } from '@/lib/player/time';
 import type { PlayerAvailability } from '@/types/database';
+import { fieldClass } from '@/components/ui/input';
+import { cn } from '@/lib/cn';
 
 import {
   addAvailabilityWindow,
@@ -59,13 +61,13 @@ function RemoveWindowForm({ window }: { window: PlayerAvailability }) {
         // window, because a screen-reader user tabbing a list of seven
         // identical "Remove" buttons has no way to tell them apart.
         aria-label={`Remove ${label}`}
-        className="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100"
+        className="rounded-input border border-border px-2 py-1 text-xs text-muted transition-colors duration-150 hover:border-danger/50 hover:text-danger"
       >
         Remove
       </button>
 
       {state && !state.ok ? (
-        <span role="alert" className="text-xs text-red-700">
+        <span role="alert" className="text-xs text-danger">
           {state.error}
         </span>
       ) : null}
@@ -142,7 +144,7 @@ export function AvailabilityEditor({
   return (
     <div className="space-y-10">
       <section aria-labelledby="add-window-heading" className="space-y-4">
-        <h2 id="add-window-heading" className="text-base font-semibold">
+        <h2 id="add-window-heading" className="text-base font-semibold text-fg">
           Add a window
         </h2>
 
@@ -150,7 +152,7 @@ export function AvailabilityEditor({
           {showBanner && state && !state.ok ? (
             <p
               role="alert"
-              className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+              className="rounded-input border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger"
             >
               {state.error}
             </p>
@@ -159,7 +161,7 @@ export function AvailabilityEditor({
           {added ? (
             <p
               role="status"
-              className="rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800"
+              className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
             >
               Window added.
             </p>
@@ -167,7 +169,7 @@ export function AvailabilityEditor({
 
           <div className="flex flex-wrap gap-4">
             <div>
-              <label htmlFor="day_of_week" className="block text-sm font-medium">
+              <label htmlFor="day_of_week" className="mb-1.5 block text-sm font-medium text-fg">
                 Day
               </label>
               <select
@@ -175,7 +177,7 @@ export function AvailabilityEditor({
                 name="day_of_week"
                 defaultValue={1}
                 aria-invalid={fieldErrors?.day_of_week ? true : undefined}
-                className="mt-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+                className={cn(fieldClass, 'w-auto')}
               >
                 {DAY_NAMES.map((name, day) => (
                   <option key={name} value={day}>
@@ -192,7 +194,7 @@ export function AvailabilityEditor({
             <div>
               <label
                 htmlFor="start_minute"
-                className="block text-sm font-medium"
+                className="mb-1.5 block text-sm font-medium text-fg"
               >
                 From
               </label>
@@ -201,7 +203,7 @@ export function AvailabilityEditor({
                 name="start_minute"
                 defaultValue={1200}
                 aria-invalid={fieldErrors?.start_minute ? true : undefined}
-                className="mt-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+                className={cn(fieldClass, 'w-auto')}
               >
                 {TIME_SLOTS.map((slot) => (
                   <option key={slot.value} value={slot.value}>
@@ -216,7 +218,7 @@ export function AvailabilityEditor({
             </div>
 
             <div>
-              <label htmlFor="end_minute" className="block text-sm font-medium">
+              <label htmlFor="end_minute" className="mb-1.5 block text-sm font-medium text-fg">
                 To
               </label>
               <select
@@ -224,7 +226,7 @@ export function AvailabilityEditor({
                 name="end_minute"
                 defaultValue={1380}
                 aria-invalid={fieldErrors?.end_minute ? true : undefined}
-                className="mt-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+                className={cn(fieldClass, 'w-auto')}
               >
                 {TIME_SLOTS.map((slot) => (
                   <option key={slot.value} value={slot.value}>
@@ -241,7 +243,7 @@ export function AvailabilityEditor({
             <div>
               <label
                 htmlFor="timezone_offset_minutes"
-                className="block text-sm font-medium"
+                className="mb-1.5 block text-sm font-medium text-fg"
               >
                 Timezone
               </label>
@@ -252,7 +254,7 @@ export function AvailabilityEditor({
                 aria-invalid={
                   fieldErrors?.timezone_offset_minutes ? true : undefined
                 }
-                className="mt-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+                className={cn(fieldClass, 'w-auto')}
               >
                 {TIMEZONE_OFFSETS.map((offset) => (
                   <option key={offset.value} value={offset.value}>
@@ -267,7 +269,7 @@ export function AvailabilityEditor({
             </div>
           </div>
 
-          <p className="text-xs text-neutral-600">
+          <p className="text-xs text-muted">
             Times are local to the timezone you pick. A window that crosses
             midnight is added as two windows — one ending at 24:00 and one
             starting at 00:00 the next day.
@@ -278,12 +280,12 @@ export function AvailabilityEditor({
       </section>
 
       <section aria-labelledby="windows-heading" className="space-y-4">
-        <h2 id="windows-heading" className="text-base font-semibold">
+        <h2 id="windows-heading" className="text-base font-semibold text-fg">
           Your week
         </h2>
 
         {availability.length === 0 ? (
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-muted">
             No windows yet.
           </p>
         ) : (
@@ -292,7 +294,7 @@ export function AvailabilityEditor({
               .filter((group) => group.windows.length > 0)
               .map((group) => (
                 <div key={group.name}>
-                  <dt className="text-sm font-medium">{group.name}</dt>
+                  <dt className="text-sm font-medium text-fg">{group.name}</dt>
                   <dd className="mt-1">
                     <ul className="space-y-1">
                       {group.windows.map((window) => (

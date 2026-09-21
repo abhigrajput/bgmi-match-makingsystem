@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 
+import { StatePanel } from '@/components/shell/state-panel';
+import { Card, CardBody, PageHeader } from '@/components/ui';
 import { loadPlayerOverview } from '@/lib/player/queries';
 
 import { AvailabilityEditor } from './availability-editor';
@@ -32,41 +35,36 @@ export default async function AvailabilityPage() {
 
   if (result.status === 'no-profile') {
     return (
-      <main className="space-y-2 text-sm">
-        <h1 className="text-lg font-semibold">No profile row for this account</h1>
-        <p>auth_user_id: {result.authUserId}</p>
-        <p className="text-neutral-700">
-          Check that the on_auth_user_created trigger still exists on auth.users
-          (supabase/migrations/0002_triggers.sql).
-        </p>
-      </main>
+      <StatePanel
+        title="No profile row for this account"
+        body={`auth_user_id ${result.authUserId}. Check that the on_auth_user_created trigger still exists on auth.users (supabase/migrations/0002_triggers.sql).`}
+      />
     );
   }
 
   if (result.status === 'error') {
-    return (
-      <main className="space-y-2 text-sm">
-        <h1 className="text-lg font-semibold">Could not load your availability</h1>
-        <p className="text-red-800">{result.message}</p>
-      </main>
-    );
+    return <StatePanel title="Could not load your availability" body={result.message} />;
   }
 
   return (
-    <main className="space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold">Availability</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          When you are usually free to play, as a weekly pattern. Matchmaking
-          looks for players whose windows overlap yours, so a week with no
-          windows cannot be matched.{' '}
-          <Link href="/profile" className="underline">
-            Back to profile
-          </Link>
-        </p>
-      </div>
-
-      <AvailabilityEditor availability={result.overview.availability} />
-    </main>
+    <div>
+      <Link
+        href="/profile"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg"
+      >
+        <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+        Back to profile
+      </Link>
+      <PageHeader
+        eyebrow="Profile"
+        title="Availability"
+        description="When you are usually free to play, as a weekly pattern. Squad formation scores how many hours your windows overlap with each teammate's, so a week with no windows cannot be matched."
+      />
+      <Card>
+        <CardBody className="py-6">
+          <AvailabilityEditor availability={result.overview.availability} />
+        </CardBody>
+      </Card>
+    </div>
   );
 }

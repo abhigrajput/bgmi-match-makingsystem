@@ -148,6 +148,8 @@ export type Profile = {
   avatar_url: string | null;
   bio: string | null;
   is_active: boolean;
+  /** Synthetic row written by scripts/seed.ts (0005). */
+  is_seed: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -161,6 +163,7 @@ export type ProfileInsert = {
   avatar_url?: string | null;
   bio?: string | null;
   is_active?: boolean;
+  is_seed?: boolean;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 }
@@ -201,6 +204,8 @@ export type PlayerStats = {
   /** null = never scored. Distinct from "scored and landed on the defaults". */
   last_computed_at: Timestamptz | null;
 
+  /** Synthetic row written by scripts/seed.ts (0005). */
+  is_seed: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -222,6 +227,7 @@ export type PlayerStatsInsert = {
   matches_played?: number;
   matches_won?: number;
   last_computed_at?: Timestamptz | null;
+  is_seed?: boolean;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 }
@@ -246,6 +252,8 @@ export type PlayerPreferences = {
   languages: string[];
   /** null = no ping constraint stated. */
   max_ping_ms: number | null;
+  /** Synthetic row written by scripts/seed.ts (0005). */
+  is_seed: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -261,6 +269,7 @@ export type PlayerPreferencesInsert = {
   wants_ranked?: boolean;
   languages?: string[];
   max_ping_ms?: number | null;
+  is_seed?: boolean;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 }
@@ -285,6 +294,8 @@ export type PlayerAvailability = {
   end_minute: number;
   /** -720 (UTC-12) to +840 (UTC+14). */
   timezone_offset_minutes: number;
+  /** Synthetic row written by scripts/seed.ts (0005). */
+  is_seed: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -296,6 +307,7 @@ export type PlayerAvailabilityInsert = {
   start_minute: number;
   end_minute: number;
   timezone_offset_minutes?: number;
+  is_seed?: boolean;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 }
@@ -385,6 +397,14 @@ export type Match = {
   synergy_score: Score0To100 | null;
   /** Provenance for the ML-unavailable fallback. See architecture.md section 4. */
   scoring_source: ScoringSource;
+  /** Set when the match was formed for a tournament (0005). */
+  tournament_id: UUID | null;
+  /** Per-component scores behind synergy_score, as produced at formation. */
+  squad_score_components: SquadScoreComponents | null;
+  /** "Why this squad" lines, stored as produced at formation time. */
+  reasons: string[] | null;
+  /** Synthetic row written by scripts/seed.ts (0005). */
+  is_seed: boolean;
   created_at: Timestamptz;
   started_at: Timestamptz | null;
   ended_at: Timestamptz | null;
@@ -400,6 +420,10 @@ export type MatchInsert = {
   squad_size?: number;
   synergy_score?: Score0To100 | null;
   scoring_source?: ScoringSource;
+  tournament_id?: UUID | null;
+  squad_score_components?: SquadScoreComponents | null;
+  reasons?: string[] | null;
+  is_seed?: boolean;
   created_at?: Timestamptz;
   started_at?: Timestamptz | null;
   ended_at?: Timestamptz | null;
@@ -426,6 +450,8 @@ export type MatchParticipant = {
   joined_at: Timestamptz;
   /** null = present at the end of the match. */
   left_at: Timestamptz | null;
+  /** Synthetic row written by scripts/seed.ts (0005). */
+  is_seed: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -438,6 +464,7 @@ export type MatchParticipantInsert = {
   is_leader?: boolean;
   joined_at?: Timestamptz;
   left_at?: Timestamptz | null;
+  is_seed?: boolean;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 }
@@ -463,6 +490,8 @@ export type MatchFeedback = {
   teamwork_rating: Score0To100 | null;
   would_play_again: boolean | null;
   comment: string | null;
+  /** Synthetic row written by scripts/seed.ts (0005). */
+  is_seed: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -476,6 +505,7 @@ export type MatchFeedbackInsert = {
   teamwork_rating?: Score0To100 | null;
   would_play_again?: boolean | null;
   comment?: string | null;
+  is_seed?: boolean;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 }
@@ -486,6 +516,127 @@ export type MatchFeedbackUpdate = Partial<
     'match_id' | 'rater_profile_id' | 'ratee_profile_id'
   >
 >;
+
+
+// ---------------------------------------------------------------------------
+// 0005: tournaments, registrations, model versions, read surfaces.
+// ---------------------------------------------------------------------------
+
+export type TournamentStatus = 'draft' | 'open' | 'matched' | 'completed';
+
+export const TOURNAMENT_STATUSES: readonly TournamentStatus[] = [
+  'draft',
+  'open',
+  'matched',
+  'completed',
+] as const;
+
+/** Per-component scores stored on matches.squad_score_components. */
+export type SquadScoreComponents = Record<string, number>;
+
+export type Tournament = {
+  id: UUID;
+  name: string;
+  slug: string;
+  description: string | null;
+  squad_size: number;
+  region: string | null;
+  starts_at: Timestamptz;
+  registration_closes_at: Timestamptz | null;
+  status: TournamentStatus;
+  /** Last formation result; shape owned by lib/scoring/formation.ts. */
+  formation_summary: Json | null;
+  formed_at: Timestamptz | null;
+  is_seed: boolean;
+  created_at: Timestamptz;
+  updated_at: Timestamptz;
+};
+
+export type TournamentInsert = {
+  id?: UUID;
+  name: string;
+  slug: string;
+  description?: string | null;
+  squad_size?: number;
+  region?: string | null;
+  starts_at: Timestamptz;
+  registration_closes_at?: Timestamptz | null;
+  status?: TournamentStatus;
+  formation_summary?: Json | null;
+  formed_at?: Timestamptz | null;
+  is_seed?: boolean;
+  created_at?: Timestamptz;
+  updated_at?: Timestamptz;
+};
+
+export type TournamentUpdate = Partial<TournamentInsert>;
+
+export type TournamentRegistration = {
+  id: UUID;
+  tournament_id: UUID;
+  profile_id: UUID;
+  desired_role: PlayerRole | null;
+  registered_at: Timestamptz;
+  is_seed: boolean;
+};
+
+export type TournamentRegistrationInsert = {
+  id?: UUID;
+  tournament_id: UUID;
+  profile_id: UUID;
+  desired_role?: PlayerRole | null;
+  registered_at?: Timestamptz;
+  is_seed?: boolean;
+};
+
+export type ModelVersion = {
+  id: UUID;
+  version: string;
+  algorithm: string;
+  trained_at: Timestamptz;
+  n_train: number | null;
+  n_test: number | null;
+  metrics: Json | null;
+  baselines: Json | null;
+  feature_importance: Json | null;
+  is_active: boolean;
+  created_at: Timestamptz;
+};
+
+export type ModelVersionInsert = {
+  id?: UUID;
+  version: string;
+  algorithm: string;
+  trained_at?: Timestamptz;
+  n_train?: number | null;
+  n_test?: number | null;
+  metrics?: Json | null;
+  baselines?: Json | null;
+  feature_importance?: Json | null;
+  is_active?: boolean;
+  created_at?: Timestamptz;
+};
+
+/** leaderboard_v: the only public window onto player_preferences.primary_role. */
+export type LeaderboardRow = {
+  profile_id: UUID;
+  display_name: string;
+  bgmi_ign: string;
+  region: string | null;
+  primary_role: PlayerRole | null;
+  overall_rating: number | null;
+  kd_ratio: number | null;
+  win_rate: number | null;
+  matches_played: number | null;
+};
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 // ---------------------------------------------------------------------------
 // Aggregate schema type
@@ -560,14 +711,47 @@ export interface Database {
         Update: MatchFeedbackUpdate;
         Relationships: [];
       };
+      tournaments: {
+        Row: Tournament;
+        Insert: TournamentInsert;
+        Update: TournamentUpdate;
+        Relationships: [];
+      };
+      tournament_registrations: {
+        Row: TournamentRegistration;
+        Insert: TournamentRegistrationInsert;
+        Update: Partial<TournamentRegistrationInsert>;
+        Relationships: [];
+      };
+      model_versions: {
+        Row: ModelVersion;
+        Insert: ModelVersionInsert;
+        Update: Partial<ModelVersionInsert>;
+        Relationships: [];
+      };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: {
+      leaderboard_v: {
+        Row: LeaderboardRow;
+        Relationships: [];
+      };
+    };
+    Functions: {
+      public_stats: {
+        Args: Record<string, never>;
+        Returns: { players: number; tournaments: number; squads_formed: number }[];
+      };
+      analytics_overview: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+    };
     Enums: {
       player_role: PlayerRole;
       queue_state: QueueState;
       match_status: MatchStatus;
       comm_preference: CommPreference;
+      tournament_status: TournamentStatus;
     };
   };
 }

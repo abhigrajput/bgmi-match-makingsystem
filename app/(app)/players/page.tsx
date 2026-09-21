@@ -1,20 +1,26 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Users } from 'lucide-react';
 
+import { StatePanel } from '@/components/shell/state-panel';
+import {
+  Avatar,
+  Badge,
+  EmptyState,
+  PageHeader,
+  RoleBadge,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from '@/components/ui';
 import { createClient } from '@/lib/supabase/server';
-import type { PlayerRole } from '@/types/database';
 
 export const metadata: Metadata = {
   title: 'Players',
-};
-
-const ROLE_LABELS: Record<PlayerRole, string> = {
-  igl: 'IGL',
-  assaulter: 'Assaulter',
-  sniper: 'Sniper',
-  support: 'Support',
-  flex: 'Flex',
 };
 
 /**
@@ -30,12 +36,8 @@ const ROLE_LABELS: Record<PlayerRole, string> = {
  * That is the policy working, not a bug, and the fix is NOT service_role. This
  * page runs on the anon key with the user's JWT, like every other page under
  * app/, and bypassing RLS to populate a column would publish the strategic half
- * of every player's profile to satisfy a table layout.
- *
- * So the column says "Private" for everyone else and means it. If roles should
- * be public later, that is a migration exposing primary_role alone -- a
- * deliberate narrowing of the rule 0003 argued for, reviewed as such -- not a
- * key swap here.
+ * of every player's profile to satisfy a table layout. The leaderboard shows
+ * roles through leaderboard_v, a view that exposes primary_role alone.
  *
  * profiles itself IS readable by every signed-in user, which is the deliberate
  * opening in the model: a recommender cannot show you four strangers without
@@ -70,7 +72,7 @@ export default async function PlayersPage() {
   const [profilesResult, myPreferencesResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, bgmi_ign, region, is_active')
+      .select('id, display_name, bgmi_ign, region, is_active, avatar_url')
       .eq('is_active', true)
       .order('display_name', { ascending: true }),
     supabase
@@ -81,10 +83,10 @@ export default async function PlayersPage() {
 
   if (profilesResult.error) {
     return (
-      <main className="space-y-2 text-sm">
-        <h1 className="text-lg font-semibold">Could not load the roster</h1>
-        <p className="text-red-800">{profilesResult.error.message}</p>
-      </main>
+      <StatePanel
+        title="Could not load the roster"
+        body={profilesResult.error.message}
+      />
     );
   }
 
@@ -98,73 +100,60 @@ export default async function PlayersPage() {
   const myProfileId = myPreferencesResult.data?.profile_id ?? null;
 
   return (
-    <main className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Players</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Every active player. Roles are private to each player, so only yours is
-          shown.
-        </p>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="Community"
+        title="Players"
+        description={`${profiles.length} active ${profiles.length === 1 ? 'player' : 'players'}. Roles are private to each player, so only yours is shown here; the leaderboard shows everyone's primary role.`}
+      />
 
       {profiles.length === 0 ? (
-        <p className="text-sm text-neutral-600">
-          No active players yet.
-        </p>
+        <EmptyState
+          icon={Users}
+          title="No active players yet"
+          body="Players appear here as soon as they sign up."
+        />
       ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-neutral-300 text-left">
-              <th scope="col" className="py-2 pr-4 font-medium">
-                Player
-              </th>
-              <th scope="col" className="py-2 pr-4 font-medium">
-                In-game name
-              </th>
-              <th scope="col" className="py-2 pr-4 font-medium">
-                Region
-              </th>
-              <th scope="col" className="py-2 font-medium">
-                Role
-              </th>
+        <Table wrapperClassName="max-h-[70vh]">
+          <THead>
+            <tr>
+              <TH>Player</TH>
+              <TH>In-game name</TH>
+              <TH>Region</TH>
+              <TH>Role</TH>
             </tr>
-          </thead>
-          <tbody>
+          </THead>
+          <TBody>
             {profiles.map((profile) => {
               const isMe = profile.id === myProfileId;
 
               return (
-                <tr key={profile.id} className="border-b border-neutral-200">
-                  <td className="py-2 pr-4">
+                <TR key={profile.id}>
+                  <TD>
                     <Link
                       href={`/players/${profile.id}`}
-                      className="underline"
+                      className="flex items-center gap-2.5 font-medium text-fg hover:text-data"
                     >
+                      <Avatar name={profile.display_name} src={profile.avatar_url} size="sm" />
                       {profile.display_name}
+                      {isMe ? <Badge tone="accent">you</Badge> : null}
                     </Link>
-                    {isMe ? (
-                      <span className="ml-2 text-xs text-neutral-500">you</span>
-                    ) : null}
-                  </td>
-                  <td className="py-2 pr-4">{profile.bgmi_ign}</td>
-                  <td className="py-2 pr-4">
-                    {profile.region ?? (
-                      <span className="text-neutral-500">Not set</span>
-                    )}
-                  </td>
-                  <td className="py-2">
+                  </TD>
+                  <TD className="font-mono text-muted">{profile.bgmi_ign}</TD>
+                  <TD className="text-muted">{profile.region ?? 'Not set'}</TD>
+                  <TD>
                     {isMe && myRole ? (
-                      ROLE_LABELS[myRole]
+                      <RoleBadge role={myRole} />
                     ) : (
-                      <span className="text-neutral-500">Private</span>
+                      <span className="text-xs text-muted">Private</span>
                     )}
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               );
             })}
-          </tbody>
-        </table>
+          </TBody>
+        </Table>
       )}
-    </main>
+    </div>
   );
 }

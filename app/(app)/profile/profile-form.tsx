@@ -5,6 +5,7 @@ import { useFormState } from 'react-dom';
 import { FieldError } from '@/components/form/field-error';
 import { SubmitButton } from '@/components/form/submit-button';
 import type { Profile } from '@/types/database';
+import { fieldClass } from '@/components/ui/input';
 
 import { updateProfile, type ActionResult } from '../actions';
 
@@ -41,7 +42,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       {state && !state.ok ? (
         <p
           role="alert"
-          className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className="rounded-input border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger"
         >
           {state.error}
         </p>
@@ -50,14 +51,14 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       {saved ? (
         <p
           role="status"
-          className="rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800"
+          className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
         >
           Profile saved.
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="display_name" className="block text-sm font-medium">
+        <label htmlFor="display_name" className="mb-1.5 block text-sm font-medium text-fg">
           Display name
         </label>
         <input
@@ -70,7 +71,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             fieldErrors?.display_name ? 'display_name-error' : undefined
           }
           aria-invalid={fieldErrors?.display_name ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
         <FieldError
           id="display_name-error"
@@ -79,7 +80,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       </div>
 
       <div>
-        <label htmlFor="bgmi_ign" className="block text-sm font-medium">
+        <label htmlFor="bgmi_ign" className="mb-1.5 block text-sm font-medium text-fg">
           BGMI in-game name
         </label>
         <input
@@ -90,9 +91,9 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           defaultValue={profile.bgmi_ign}
           aria-describedby="bgmi_ign-hint bgmi_ign-error"
           aria-invalid={fieldErrors?.bgmi_ign ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
-        <p id="bgmi_ign-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="bgmi_ign-hint" className="mt-1 text-xs text-muted">
           Must be unique, and must match your name in BGMI — it is how match
           records are matched back to you.
         </p>
@@ -100,8 +101,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       </div>
 
       <div>
-        <label htmlFor="region" className="block text-sm font-medium">
-          Region <span className="text-neutral-500">(optional)</span>
+        <label htmlFor="region" className="mb-1.5 block text-sm font-medium text-fg">
+          Region <span className="text-muted">(optional)</span>
         </label>
         <input
           id="region"
@@ -110,9 +111,9 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           defaultValue={profile.region ?? ''}
           aria-describedby="region-hint region-error"
           aria-invalid={fieldErrors?.region ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
-        <p id="region-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="region-hint" className="mt-1 text-xs text-muted">
           Free text, e.g. “Asia” or “India”. Used as a hard filter before
           matching, so spelling it the same way as your squadmates matters.
         </p>
@@ -120,8 +121,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       </div>
 
       <div>
-        <label htmlFor="avatar_url" className="block text-sm font-medium">
-          Avatar URL <span className="text-neutral-500">(optional)</span>
+        <label htmlFor="avatar_url" className="mb-1.5 block text-sm font-medium text-fg">
+          Avatar URL <span className="text-muted">(optional)</span>
         </label>
         <input
           id="avatar_url"
@@ -132,14 +133,14 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             fieldErrors?.avatar_url ? 'avatar_url-error' : undefined
           }
           aria-invalid={fieldErrors?.avatar_url ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
         <FieldError id="avatar_url-error" messages={fieldErrors?.avatar_url} />
       </div>
 
       <div>
-        <label htmlFor="bio" className="block text-sm font-medium">
-          Bio <span className="text-neutral-500">(optional)</span>
+        <label htmlFor="bio" className="mb-1.5 block text-sm font-medium text-fg">
+          Bio <span className="text-muted">(optional)</span>
         </label>
         <textarea
           id="bio"
@@ -149,7 +150,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           defaultValue={profile.bio ?? ''}
           aria-describedby={fieldErrors?.bio ? 'bio-error' : undefined}
           aria-invalid={fieldErrors?.bio ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
         <FieldError id="bio-error" messages={fieldErrors?.bio} />
       </div>

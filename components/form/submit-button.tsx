@@ -2,6 +2,8 @@
 
 import { useFormStatus } from 'react-dom';
 
+import { Button, type ButtonVariant } from '@/components/ui/button';
+
 /**
  * Submit button that disables itself while its form is in flight.
  *
@@ -14,16 +16,25 @@ import { useFormStatus } from 'react-dom';
  * email or the bgmi_ign UNIQUE constraint, so the user is told their own
  * in-game name is taken.
  */
-export function SubmitButton({ label }: { label: string }) {
+export function SubmitButton({
+  label,
+  variant = 'primary',
+  fullWidth = true,
+}: {
+  label: string;
+  variant?: ButtonVariant;
+  fullWidth?: boolean;
+}) {
   const { pending } = useFormStatus();
 
   return (
-    <button
+    <Button
       type="submit"
-      disabled={pending}
-      className="w-full rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-400"
+      variant={variant}
+      loading={pending}
+      className={fullWidth ? 'w-full' : undefined}
     >
       {pending ? 'Working…' : label}
-    </button>
+    </Button>
   );
 }

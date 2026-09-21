@@ -11,6 +11,7 @@ import {
   type PlayerPreferences,
   type PlayerRole,
 } from '@/types/database';
+import { fieldClass } from '@/components/ui/input';
 
 import { upsertPreferences, type ActionResult } from '../actions';
 
@@ -64,7 +65,7 @@ export function PreferencesForm({
       {state && !state.ok ? (
         <p
           role="alert"
-          className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className="rounded-input border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger"
         >
           {state.error}
         </p>
@@ -73,14 +74,14 @@ export function PreferencesForm({
       {saved ? (
         <p
           role="status"
-          className="rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800"
+          className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
         >
           Preferences saved.
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="primary_role" className="block text-sm font-medium">
+        <label htmlFor="primary_role" className="mb-1.5 block text-sm font-medium text-fg">
           Primary role
         </label>
         <select
@@ -90,7 +91,7 @@ export function PreferencesForm({
           aria-describedby={
             fieldErrors?.primary_role ? 'primary_role-error' : undefined
           }
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         >
           {PLAYER_ROLES.map((role) => (
             <option key={role} value={role}>
@@ -105,15 +106,15 @@ export function PreferencesForm({
       </div>
 
       <div>
-        <label htmlFor="secondary_role" className="block text-sm font-medium">
-          Secondary role <span className="text-neutral-500">(optional)</span>
+        <label htmlFor="secondary_role" className="mb-1.5 block text-sm font-medium text-fg">
+          Secondary role <span className="text-muted">(optional)</span>
         </label>
         <select
           id="secondary_role"
           name="secondary_role"
           defaultValue={preferences?.secondary_role ?? ''}
           aria-describedby="secondary_role-hint secondary_role-error"
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         >
           {/*
             The empty option posts "", which the schema maps to NULL. It is
@@ -129,7 +130,7 @@ export function PreferencesForm({
             </option>
           ))}
         </select>
-        <p id="secondary_role-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="secondary_role-hint" className="mt-1 text-xs text-muted">
           Must differ from your primary role.
         </p>
         <FieldError
@@ -139,7 +140,7 @@ export function PreferencesForm({
       </div>
 
       <div>
-        <label htmlFor="comm_preference" className="block text-sm font-medium">
+        <label htmlFor="comm_preference" className="mb-1.5 block text-sm font-medium text-fg">
           Communication
         </label>
         <select
@@ -147,7 +148,7 @@ export function PreferencesForm({
           name="comm_preference"
           defaultValue={preferences?.comm_preference ?? 'voice_optional'}
           aria-describedby="comm_preference-hint comm_preference-error"
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         >
           {COMM_PREFERENCES.map((option) => (
             <option key={option} value={option}>
@@ -155,7 +156,7 @@ export function PreferencesForm({
             </option>
           ))}
         </select>
-        <p id="comm_preference-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="comm_preference-hint" className="mt-1 text-xs text-muted">
           A hard filter, not a preference score — you will not be grouped with
           players whose comms requirement conflicts with yours.
         </p>
@@ -166,8 +167,8 @@ export function PreferencesForm({
       </div>
 
       <fieldset>
-        <legend className="text-sm font-medium">Teammate skill band</legend>
-        <p className="mt-1 text-xs text-neutral-600">
+        <legend className="text-sm font-medium text-fg">Teammate skill band</legend>
+        <p className="mt-1 text-xs text-muted">
           The 0–100 rating range you will accept in teammates. Leave it wide
           unless you have a reason to narrow it — a narrow band means longer
           waits, and an inverted one means no match is possible.
@@ -177,7 +178,7 @@ export function PreferencesForm({
           <div className="flex-1">
             <label
               htmlFor="min_teammate_skill"
-              className="block text-sm text-neutral-700"
+              className="mb-1.5 block text-sm text-muted"
             >
               Minimum
             </label>
@@ -190,7 +191,7 @@ export function PreferencesForm({
               step={1}
               defaultValue={preferences?.min_teammate_skill ?? 0}
               aria-invalid={fieldErrors?.min_teammate_skill ? true : undefined}
-              className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+              className={fieldClass}
             />
             <FieldError
               id="min_teammate_skill-error"
@@ -201,7 +202,7 @@ export function PreferencesForm({
           <div className="flex-1">
             <label
               htmlFor="max_teammate_skill"
-              className="block text-sm text-neutral-700"
+              className="mb-1.5 block text-sm text-muted"
             >
               Maximum
             </label>
@@ -214,7 +215,7 @@ export function PreferencesForm({
               step={1}
               defaultValue={preferences?.max_teammate_skill ?? 100}
               aria-invalid={fieldErrors?.max_teammate_skill ? true : undefined}
-              className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+              className={fieldClass}
             />
             <FieldError
               id="max_teammate_skill-error"
@@ -225,7 +226,7 @@ export function PreferencesForm({
       </fieldset>
 
       <div>
-        <label htmlFor="languages" className="block text-sm font-medium">
+        <label htmlFor="languages" className="mb-1.5 block text-sm font-medium text-fg">
           Languages
         </label>
         <input
@@ -235,17 +236,17 @@ export function PreferencesForm({
           defaultValue={(preferences?.languages ?? ['en']).join(', ')}
           aria-describedby="languages-hint languages-error"
           aria-invalid={fieldErrors?.languages ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
-        <p id="languages-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="languages-hint" className="mt-1 text-xs text-muted">
           Comma separated, e.g. “en, hi”. Duplicates and blanks are dropped.
         </p>
         <FieldError id="languages-error" messages={fieldErrors?.languages} />
       </div>
 
       <div>
-        <label htmlFor="max_ping_ms" className="block text-sm font-medium">
-          Maximum ping <span className="text-neutral-500">(optional)</span>
+        <label htmlFor="max_ping_ms" className="mb-1.5 block text-sm font-medium text-fg">
+          Maximum ping <span className="text-muted">(optional)</span>
         </label>
         <input
           id="max_ping_ms"
@@ -257,9 +258,9 @@ export function PreferencesForm({
           defaultValue={preferences?.max_ping_ms ?? ''}
           aria-describedby="max_ping_ms-hint max_ping_ms-error"
           aria-invalid={fieldErrors?.max_ping_ms ? true : undefined}
-          className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+          className={fieldClass}
         />
-        <p id="max_ping_ms-hint" className="mt-1 text-xs text-neutral-600">
+        <p id="max_ping_ms-hint" className="mt-1 text-xs text-muted">
           Milliseconds. Leave blank for no limit — 0 is not “no limit”, it is a
           limit nothing can meet.
         </p>
@@ -276,7 +277,7 @@ export function PreferencesForm({
           name="wants_ranked"
           type="checkbox"
           defaultChecked={preferences?.wants_ranked ?? false}
-          className="h-4 w-4 rounded border-neutral-300"
+          className="h-4 w-4 rounded border-border accent-[rgb(var(--accent))]"
         />
         <label htmlFor="wants_ranked" className="text-sm">
           I want ranked matches

@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { CheckCircle2, Circle } from 'lucide-react';
 
+import { cn } from '@/lib/cn';
 import type { Completeness } from '@/lib/player/completeness';
 
 /**
@@ -24,52 +26,60 @@ export function CompletenessCard({
   return (
     <section
       aria-labelledby="completeness-heading"
-      className={`rounded border p-4 ${
+      className={cn(
+        'rounded-card border p-5',
         readyToMatch
-          ? 'border-green-300 bg-green-50'
-          : 'border-amber-300 bg-amber-50'
-      }`}
+          ? 'border-success/40 bg-success/5'
+          : 'border-warning/40 bg-warning/5',
+      )}
     >
-      <h2 id="completeness-heading" className="text-sm font-semibold">
+      <h2
+        id="completeness-heading"
+        className={cn(
+          'text-sm font-semibold',
+          readyToMatch ? 'text-success' : 'text-warning',
+        )}
+      >
         {readyToMatch
           ? 'Your profile is ready for matchmaking'
           : `Your profile is missing ${missingCount === 1 ? '1 thing' : `${missingCount} things`}`}
       </h2>
 
-      <p className="mt-1 text-sm text-neutral-700">
+      <p className="mt-1 text-sm text-muted">
         {readyToMatch
-          ? 'Preferences and availability are both set. Matchmaking arrives in a later phase.'
-          : 'Matchmaking needs both of these. Until they are set, no squad can be built around you.'}
+          ? 'Preferences and availability are both set, so you can register for tournaments and be placed in a squad.'
+          : 'Squad formation needs both of these. Until they are set, you cannot register for a tournament.'}
       </p>
 
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-4 space-y-2.5">
         {steps.map((step) => (
           <li key={step.key} className="text-sm">
-            <span className="flex items-start gap-2">
+            <span className="flex items-start gap-2.5">
               {/*
-                aria-hidden on the glyph, with the state repeated as text for
-                assistive tech. A check mark alone is announced as "check mark"
-                or skipped entirely depending on the reader, and the whole
-                content of this row is whether the step is done.
+                aria-hidden on the icon, with the state repeated as text for
+                assistive tech. An icon alone is announced as nothing at all,
+                and the whole content of this row is whether the step is done.
               */}
-              <span aria-hidden="true" className="leading-5">
-                {step.done ? '✓' : '○'}
-              </span>
+              {step.done ? (
+                <CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+              ) : (
+                <Circle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              )}
               <span>
                 <span className="sr-only">
                   {step.done ? 'Done: ' : 'Not done: '}
                 </span>
                 {step.done ? (
-                  <span className="text-neutral-700">{step.label}</span>
+                  <span className="text-muted">{step.label}</span>
                 ) : (
-                  <Link href={step.href} className="font-medium underline">
+                  <Link href={step.href} className="font-medium text-fg underline decoration-warning/60 underline-offset-4 hover:decoration-warning">
                     {step.label}
                   </Link>
                 )}
                 {/* The consequence is shown only when the step is undone --
                     once it is done, it is no longer information. */}
                 {step.done ? null : (
-                  <span className="mt-0.5 block text-neutral-600">
+                  <span className="mt-0.5 block text-muted">
                     {step.consequence}
                   </span>
                 )}

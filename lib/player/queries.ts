@@ -23,6 +23,7 @@ import { createClient } from '@/lib/supabase/server';
 import type {
   PlayerAvailability,
   PlayerPreferences,
+  PlayerStats,
   Profile,
 } from '@/types/database';
 
@@ -32,6 +33,8 @@ export type PlayerOverview = {
   preferences: PlayerPreferences | null;
   /** Ordered for display: by day, then by start time within the day. */
   availability: PlayerAvailability[];
+  /** null = no stats row. Read-only to the player; see PlayerStatsPanel. */
+  stats: PlayerStats | null;
 };
 
 /**
@@ -79,7 +82,7 @@ export async function loadPlayerOverview(): Promise<PlayerOverviewResult> {
    * on each other, and sequencing them would add a round trip to every render
    * of both pages for no reason.
    */
-  const [preferencesResult, availabilityResult] = await Promise.all([
+  const [preferencesResult, availabilityResult, statsResult] = await Promise.all([
     supabase
       .from('player_preferences')
       .select('*')
@@ -91,6 +94,11 @@ export async function loadPlayerOverview(): Promise<PlayerOverviewResult> {
       .eq('profile_id', profile.id)
       .order('day_of_week', { ascending: true })
       .order('start_minute', { ascending: true }),
+    supabase
+      .from('player_stats')
+      .select('*')
+      .eq('profile_id', profile.id)
+      .maybeSingle(),
   ]);
 
   if (preferencesResult.error) {
@@ -110,6 +118,9 @@ export async function loadPlayerOverview(): Promise<PlayerOverviewResult> {
       // player who has not opened the form yet -- not an error to report.
       preferences: preferencesResult.data,
       availability: availabilityResult.data ?? [],
+      // A stats error is not worth failing the page over: the panel shows
+      // "no ratings yet", which is also what an unscored player sees.
+      stats: statsResult.data ?? null,
     },
   };
 }

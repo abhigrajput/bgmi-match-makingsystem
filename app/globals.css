@@ -2,8 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens.
+ *
+ * Stored as space-separated RGB channels rather than hex so Tailwind can apply
+ * opacity to them (`bg-accent/10`). tailwind.config.ts maps each one to a
+ * utility; nothing in components/ or app/ should use a raw hex value, because a
+ * hex in a component is a colour the light theme cannot reach.
+ *
+ * Dark is the default and light is the override, not the other way round: the
+ * product is used in the evening next to a game, and the dark palette is the
+ * one the layouts were designed against.
+ */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+
+  --bg: 11 13 18; /* #0B0D12 */
+  --surface: 18 21 28; /* #12151C */
+  --surface-2: 26 30 39; /* #1A1E27 */
+  --border: 38 43 54; /* #262B36 */
+  --border-strong: 58 65 80;
+  --fg: 231 233 238; /* #E7E9EE */
+  --muted: 138 145 160; /* #8A91A0 */
+
+  --accent: 245 165 36; /* #F5A524 amber: primary actions */
+  --accent-fg: 20 14 2; /* text on amber */
+  --data: 34 211 238; /* #22D3EE cyan: data, charts, links */
+  --success: 34 197 94;
+  --danger: 239 68 68;
+  --warning: 245 158 11;
+
+  --role-igl: 167 139 250;
+  --role-assaulter: 248 113 113;
+  --role-sniper: 34 211 238;
+  --role-support: 52 211 153;
+  --role-flex: 251 191 36;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --bg: 246 247 249;
+    --surface: 255 255 255;
+    --surface-2: 240 242 245;
+    --border: 222 226 232;
+    --border-strong: 190 196 206;
+    --fg: 17 20 27;
+    --muted: 88 96 112;
+
+    /* Darkened so text and outlines in these colours keep AA contrast on a
+       white surface; the dark-theme values are too light to read on it. */
+    --accent: 196 118 0;
+    --accent-fg: 255 255 255;
+    --data: 8 131 158;
+    --success: 21 128 61;
+    --danger: 200 30 30;
+    --warning: 180 100 0;
+
+    --role-igl: 109 76 214;
+    --role-assaulter: 200 50 50;
+    --role-sniper: 8 131 158;
+    --role-support: 5 140 95;
+    --role-flex: 170 110 0;
+  }
 }
 
 html {
@@ -11,6 +73,28 @@ html {
 }
 
 body {
-  background-color: #ffffff;
-  color: #1a1a1a;
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+/* Every stat in the product is compared down a column; proportional digits
+   make 111 look narrower than 888 and misalign the comparison. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* One focus treatment for everything, keyboard only. An outline on mouse
+   click reads as a bug to sighted users; none at all fails WCAG 2.4.7. */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
