@@ -2,19 +2,29 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { CalendarDays, Crosshair, Gauge, Swords, Trophy } from 'lucide-react';
+
 import { CompletenessCard } from '@/components/player/completeness-card';
 import { StatePanel } from '@/components/shell/state-panel';
 import {
+  Badge,
+  ButtonLink,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
+  EmptyState,
   PageHeader,
   RoleBadge,
+  ScoreRing,
+  StatCard,
+  StatusBadge,
 } from '@/components/ui';
+import { formatDateTime } from '@/lib/format';
 import { computeCompleteness } from '@/lib/player/completeness';
 import { loadPlayerOverview } from '@/lib/player/queries';
 import { DAY_NAMES, formatMinutes } from '@/lib/player/time';
+import { createClient } from '@/lib/supabase/server';
 import type { CommPreference } from '@/types/database';
 
 export const metadata: Metadata = {
@@ -72,7 +82,36 @@ export default async function DashboardPage() {
     return <StatePanel title="Could not load your dashboard" body={result.message} />;
   }
 
-  const { profile, preferences, availability } = result.overview;
+  const { profile, preferences, availability, stats } = result.overview;
+
+  // Three more reads for the panels below, all as the user. Matches need no
+  // player filter: 0003 already limits them to ones this player sat in.
+  const supabase = createClient();
+  const [upcoming, myRegs, recent, matchCount] = await Promise.all([
+    supabase
+      .from('tournaments')
+      .select('id, slug, name, starts_at, squad_size, status')
+      .eq('status', 'open')
+      .order('starts_at', { ascending: true })
+      .limit(3),
+    supabase.from('tournament_registrations').select('tournament_id').eq('profile_id', profile.id),
+    supabase
+      .from('matches')
+      .select('id, status, synergy_score, tournament_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabase.from('matches').select('id', { count: 'exact', head: true }),
+  ]);
+  const joined = new Set((myRegs.data ?? []).map((r) => r.tournament_id));
+  const tournamentNames = new Map((upcoming.data ?? []).map((t) => [t.id, t.name]));
+  const missingNames = (recent.data ?? [])
+    .map((m) => m.tournament_id)
+    .filter((id): id is string => !!id && !tournamentNames.has(id));
+  if (missingNames.length > 0) {
+    const { data } = await supabase.from('tournaments').select('id, name').in('id', missingNames);
+    for (const t of data ?? []) tournamentNames.set(t.id, t.name);
+  }
+  const scored = stats && stats.last_computed_at !== null;
 
   const completeness = computeCompleteness({
     preferences,
@@ -96,6 +135,80 @@ export default async function DashboardPage() {
       />
 
       <CompletenessCard completeness={completeness} />
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard label="Rating" value={scored ? stats!.overall_rating : '–'} icon={Gauge} hint={scored ? 'Computed from match history' : 'Not rated yet'} />
+        <StatCard label="Squads" value={matchCount.count ?? 0} icon={Crosshair} hint="Squads you were placed in" />
+        <StatCard label="Win rate" value={scored ? `${Number(stats!.win_rate).toFixed(1)}%` : '–'} icon={Trophy} />
+        <StatCard label="Tournaments joined" value={joined.size} icon={Swords} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming tournaments</CardTitle>
+            <Link href="/tournaments" className="text-xs font-medium text-data hover:underline">
+              All
+            </Link>
+          </CardHeader>
+          {(upcoming.data ?? []).length === 0 ? (
+            <CardBody>
+              <EmptyState icon={Swords} title="No open tournaments" body="New tournaments appear here as soon as registration opens." />
+            </CardBody>
+          ) : (
+            <ul className="divide-y divide-border">
+              {(upcoming.data ?? []).map((t) => (
+                <li key={t.id}>
+                  <Link href={`/tournaments/${t.slug}`} className="flex items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-surface-2/60">
+                    <CalendarDays aria-hidden="true" className="h-4 w-4 shrink-0 text-muted" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-fg">{t.name}</span>
+                      <span className="block text-xs text-muted">{formatDateTime(t.starts_at)}</span>
+                    </span>
+                    {joined.has(t.id) ? <Badge tone="accent">You&apos;re in</Badge> : <Badge tone="success">Open</Badge>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>My recent matches</CardTitle>
+            <Link href="/matches" className="text-xs font-medium text-data hover:underline">
+              All
+            </Link>
+          </CardHeader>
+          {(recent.data ?? []).length === 0 ? (
+            <CardBody>
+              <EmptyState
+                icon={Crosshair}
+                title="No matches yet"
+                body="Register for a tournament; your squad shows up here once it is formed."
+                action={<ButtonLink href="/tournaments" size="sm">Find a tournament</ButtonLink>}
+              />
+            </CardBody>
+          ) : (
+            <ul className="divide-y divide-border">
+              {(recent.data ?? []).map((m) => (
+                <li key={m.id}>
+                  <Link href={`/matches/${m.id}`} className="flex items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-surface-2/60">
+                    {m.synergy_score !== null ? <ScoreRing score={m.synergy_score} size={40} /> : null}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-fg">
+                        {(m.tournament_id && tournamentNames.get(m.tournament_id)) || 'Casual match'}
+                      </span>
+                      <span className="block text-xs text-muted">{formatDateTime(m.created_at)}</span>
+                    </span>
+                    <StatusBadge status={m.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

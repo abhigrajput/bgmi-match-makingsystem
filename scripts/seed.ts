@@ -288,9 +288,11 @@ async function main() {
       is_seed: true,
     });
 
-    // Availability: 1-3 windows, mostly 18:00-24:00 IST; ~15% daytime only.
-    const days = rng.sample([0, 1, 2, 3, 4, 5, 6], rng.int(1, 3));
+    // Availability: mostly 18:00-24:00 IST on 2-5 evenings a week (someone
+    // entering tournaments plays most nights); ~15% are daytime-only players
+    // with 1-3 windows, who overlap with almost nobody.
     const daytime = rng.chance(0.15);
+    const days = rng.sample([0, 1, 2, 3, 4, 5, 6], daytime ? rng.int(1, 3) : rng.int(2, 5));
     const seen = new Set<string>();
     for (const day of days) {
       let start: number;

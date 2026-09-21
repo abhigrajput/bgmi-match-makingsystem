@@ -264,7 +264,7 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
       />
     ) : (
       <div className="space-y-6">
-        <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {squads.map((squad, i) => (
             <li key={squad.match_id} className="flex">
               <div className="w-full">

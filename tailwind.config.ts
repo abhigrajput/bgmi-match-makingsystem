@@ -4,7 +4,9 @@ import type { Config } from 'tailwindcss';
 const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
 const config: Config = {
-  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
+  // lib/ holds class-name maps (lib/roles.ts) -- unscanned, their classes
+  // would never be generated and role badges would render uncoloured.
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
