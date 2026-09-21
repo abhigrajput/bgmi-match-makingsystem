@@ -134,3 +134,36 @@ info level, no errors. The demo tournament was reset afterwards and is open.
   organiser, then formed 13 ML-scored squads after being promoted with the
   service role. Formation metrics were identical to the previous run. Account
   deleted, demo tournament reset.
+
+## Production: organiser assignment and auth settings, 2026-09-21
+
+Getting the project owner signed in as organiser exposed two problems, both
+now fixed:
+
+- **Invite links could not complete.** Supabase invite and recovery emails use
+  the implicit flow (session in the URL fragment), which `/auth/callback`
+  cannot read, and the app had no way to set a password. Fixed by
+  `/accept-invite` (commit `8d1e450`): the callback forwards code-less links
+  there, the page reads the fragment in the browser, calls `setSession`,
+  clears the tokens from the address bar and asks for a password.
+- **Auth emails pointed at localhost.** The project's Site URL was
+  `http://localhost:3000` with an empty redirect allow list, so Supabase
+  ignored the live `redirectTo` and fell back to localhost. With the owner's
+  approval, updated through the Supabase Management API to Site URL
+  `https://bgmi-match-makingsystem.vercel.app` and allow list
+  `https://bgmi-match-makingsystem.vercel.app/**`, `http://localhost:3000/**`
+  (read back after the change).
+
+How the owner's session was confirmed: Supabase auth logs (Management API)
+and Vercel request logs showed which project and site the sign-in attempts
+reached; a read-only check in the owner's own browser then confirmed the live
+session and the account it belonged to.
+
+Final state, verified on production:
+
+| Item | Result |
+|---|---|
+| Organisers | exactly 1: the owner's account (in-game name `vsdzvergsver`) |
+| Organiser UI on the live site | "You are an organiser" note and **Form squads** button visible on `/tournaments/hubballi-weekend-cup` in the owner's session |
+| Unused invited account | organiser revoked, then deleted at the owner's request (never signed in; 0 registrations, matches or feedback); profile row removed by cascade |
+| Auth users on production | 1 |
