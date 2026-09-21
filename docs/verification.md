@@ -120,3 +120,17 @@ Formation on production (Hubballi Weekend Cup, 58 registered, 6 unplaced):
 
 `npx vercel logs` for the deployment during the walkthrough: 12 requests, all
 info level, no errors. The demo tournament was reset afterwards and is open.
+
+## Production: organiser role (0006), 2026-09-21
+
+- `supabase/migrations/0006_organiser_role.sql` pasted into the hosted SQL
+  Editor by the project owner. `scripts/verify-prod.ts --target prod`: 15/15,
+  including `profiles.is_organiser` (0 organisers at that point).
+- Locally, `supabase/tests/0006_verify.sql` 5/5: the column exists with default
+  false, `authenticated` and `anon` cannot UPDATE it, profile INSERT stays
+  revoked, and `display_name` is still editable.
+- Live walkthrough rerun: 20/20. The new step: the temporary account got
+  **403** from `POST /api/tournaments/hubballi-weekend-cup/match` while not an
+  organiser, then formed 13 ML-scored squads after being promoted with the
+  service role. Formation metrics were identical to the previous run. Account
+  deleted, demo tournament reset.
