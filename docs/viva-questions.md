@@ -188,10 +188,10 @@ signal (role badges carry icons and labels), chart palette validated for CVD.
 36-check end-to-end script that attempts RLS violations; CI on every push.
 
 **39. What are the main limitations?**
-Synthetic training data; no organiser role (any signed-in player can form
-squads); pairwise rather than squad-level modelling; ratings not computed from
+Synthetic training data; one global organiser role rather than per-tournament
+ownership; pairwise rather than squad-level modelling; ratings not computed from
 real match imports.
 
 **40. What would you build next?**
-Train on real feedback, add an organiser role and live queue matchmaking,
+Train on real feedback, per-tournament organisers and live queue matchmaking,
 model squads as a whole, calibrate the model and learn the blend weight.

@@ -15,7 +15,7 @@ on Next.js + Supabase.
 
 - **Tournaments:** browse, register with an optional per-tournament role,
   withdraw while registration is open.
-- **One-click squad formation** with a synergy score, ML/rule badge, assigned
+- **One-click squad formation** (organisers) with a synergy score, ML/rule badge, assigned
   roles, expandable "why this squad" reasons and a weakest-link callout.
 - **Unplaced players** listed with the rule that blocked them.
 - **Optimizer vs rank-only** comparison on the same players, as charts and a table.
@@ -142,6 +142,8 @@ Hubballi Weekend Cup on production, 58 registered players ([`docs/verification.m
   route authenticates first.
 - Registration, withdrawal and feedback rules enforced by policies and
   exercised as real attacks in `scripts/e2e-local.ts`.
+- Only organisers can form squads or reset demo tournaments (0006); players
+  cannot grant themselves the role.
 - Squad formation claims the tournament atomically; failures roll back.
 
 Threat → mitigation table: [`docs/security.md`](docs/security.md).
@@ -161,6 +163,7 @@ npx supabase migration up --local  # apply 0001–0005
 cp .env.example .env.local         # fill values from `npx supabase status`
 npx tsx scripts/seed.ts --target local
 npx tsx scripts/train.ts --target local
+npx tsx scripts/set-organiser.ts --target local --email you@example.com
 npm run dev
 ```
 
@@ -180,7 +183,7 @@ npm run dev
 ## Testing
 
 ```bash
-npm test                                          # 81 unit tests
+npm test                                          # 84 unit tests
 npx tsx scripts/verify-prod.ts --target local     # schema through REST
 npx tsx scripts/demo-user.ts --target local
 npx tsx scripts/e2e-local.ts                      # 36 end-to-end checks (dev server running)
@@ -199,8 +202,8 @@ Editor and verified through REST — no CLI or direct database connection. See
 
 - Training data is synthetic; metrics show the pipeline recovers a known
   generating process, not how real players behave.
-- No organiser role: any signed-in player can form squads or reset a demo
-  tournament.
+- A single global organiser role: organisers can form squads for any
+  tournament (no per-tournament ownership).
 - Squad quality is modelled pairwise.
 - Ratings are seeded, not computed from imported match statistics.
 

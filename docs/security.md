@@ -42,16 +42,16 @@ PostgREST directly with the public anon key.
 | 23 | Open redirect via `?next=` | Callback allows same-origin relative paths only | `app/auth/callback` |
 | 24 | Stored XSS through bio/comments | React renders text, never HTML; avatar URLs restricted to http(s) | zod schemas |
 | 25 | Hard preferences traded away by a confident model | Vetoes checked before the model; always score 0 | `model.ts`, tests |
+| 26 | A regular player forms squads or resets a demo tournament | Both routes return 403 unless `profiles.is_organiser`, checked before the service-role client is created | 0006, match and reset routes |
+| 27 | A player promotes themselves to organiser | `is_organiser` is outside the 0003 column UPDATE grant and explicitly revoked; profile INSERT is revoked; only `scripts/set-organiser.ts` (service role) sets it | 0006 |
 
 Items 4, 5-adjacent, 9, 10, 11, 12, 13 and 15 are exercised as real attacks
 with a real JWT by `scripts/e2e-local.ts`; see [`verification.md`](verification.md).
 
 ## Known limitations
 
-- **No organiser role.** Any signed-in player can press "Form squads" on an
-  open tournament, and "Reset demo" on a demo tournament. Acceptable for an
-  academic prototype with seeded demo events; a real deployment needs an
-  `organiser` claim checked in the match and reset routes.
+- **One global organiser role.** Organisers (0006) can form squads for any
+  tournament; there is no per-tournament ownership yet.
 - **Tournament lineups are visible to all signed-in players** by design
   (the squads route). Match history and feedback remain participant-only.
 - **Rate limiting** is left to Supabase/Vercel defaults.

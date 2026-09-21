@@ -19,10 +19,10 @@ every push and pull request.
 | `lib/scoring/__tests__/compatibility.test.ts` | 39 | Skill Gaussian, each veto (both directions, band edges, priority), role matrix symmetry and all 25 pairs, flex, secondary-role upgrade, comms table, Jaccard, 1440 end, IST→UTC midnight shift, Sunday→Saturday wrap, week-boundary split, zero/full/linear overlap, no double counting, weights sum to 1, symmetry and [0,1] ranges over a 40-player pool |
 | `lib/scoring/__tests__/squad.test.ts` | 13 | No vetoed pair in any squad, no player twice, every player accounted for, size 4 and 2, determinism under input reordering, reasons incl. weakest link, **optimizer beats rank-only on a fixed 40-player fixture while the baseline seats ≥ 1 vetoed pair**, blocking reasons (pool exhausted / comms veto), role assignment |
 | `lib/scoring/__tests__/model.test.ts` | 10 | AUC and confusion metrics, learning a separable rule, threshold tuning, probabilities in [0,1], 0.7/0.3 blend, vetoes beat an "always yes" model, optimizer never seats vetoed pairs with the ML scorer, malformed model rejected → rule-based fallback |
-| `app/api/__tests__/routes.test.ts` | 15 | Match route 401/404/409 (closed, too few, lost claim)/200 and rollback on failure; squads 401/200; reset 403 for real tournaments; complete 404 for non-participants, 409 abandoned, idempotent, timestamps |
+| `app/api/__tests__/routes.test.ts` | 18 | Match route 401/403 (not an organiser)/404/409 (closed, too few, lost claim)/200 and rollback on failure; squads 401/200; reset 403 for non-organisers and real tournaments; complete 404 for non-participants, 409 abandoned, idempotent, timestamps |
 | `lib/__tests__/ui-helpers.test.ts` | 4 | `cn` merge, score bands, role vocabulary completeness |
 
-Total: **81 tests**. Fixtures are seeded (`seedrandom`), so every run uses the
+Total: **84 tests**. Fixtures are seeded (`seedrandom`), so every run uses the
 same pools.
 
 ## 2. End to end (`scripts/e2e-local.ts`)

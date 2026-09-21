@@ -152,6 +152,16 @@ async function main() {
   }
 
   // --- formation --------------------------------------------------------------
+  {
+    const { error } = await asUser.from('profiles').update({ is_organiser: true } as never).eq('id', me.id);
+    check('Player cannot make themselves an organiser', error?.code === '42501', error?.code ?? 'no error');
+    await admin.from('profiles').update({ is_organiser: false }).eq('id', me.id);
+    const refused = await api(`/api/tournaments/${SLUG}/match`, 'POST');
+    check('Non-organiser cannot form squads (403)', refused.status === 403, `status ${refused.status}`);
+    const refusedReset = await api(`/api/tournaments/${SLUG}/reset`, 'POST');
+    check('Non-organiser cannot reset (403)', refusedReset.status === 403, `status ${refusedReset.status}`);
+    await admin.from('profiles').update({ is_organiser: true }).eq('id', me.id);
+  }
   const formed = await api(`/api/tournaments/${SLUG}/match`, 'POST');
   const squads = (formed.body?.squads ?? []) as { members: { profile_id: string }[]; scoring_source: string; reasons: string[] }[];
   check('POST match forms squads', formed.status === 200 && squads.length > 0, `status ${formed.status}, ${squads.length} squads`);

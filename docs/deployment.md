@@ -49,6 +49,16 @@ git commit lib/scoring/model.json docs/ml-results.md && git push   # redeploys w
 The seed only deletes `is_seed` rows on account-less profiles; real accounts
 are untouched.
 
+## Organisers
+
+Only organisers can form squads or reset demo tournaments (0006). Grant or
+revoke from a trusted machine:
+
+```bash
+npx tsx scripts/set-organiser.ts --target prod --email someone@example.com
+npx tsx scripts/set-organiser.ts --target prod --email someone@example.com --revoke
+```
+
 ## Release checks
 
 Every phase passed before commit: `tsc --noEmit`, `next lint`, `vitest run`,

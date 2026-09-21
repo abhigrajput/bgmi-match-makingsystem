@@ -58,6 +58,12 @@ async function main() {
     record(`${table}: is_seed`, error);
   }
 
+  // 0006.
+  {
+    const { data, error } = await db.from('profiles').select('is_organiser').eq('is_organiser', true);
+    record('profiles.is_organiser (0006)', error, error ? '' : `${data?.length ?? 0} organiser(s)`);
+  }
+
   // Read surfaces.
   {
     const { error } = await db

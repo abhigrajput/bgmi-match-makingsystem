@@ -150,6 +150,8 @@ export type Profile = {
   is_active: boolean;
   /** Synthetic row written by scripts/seed.ts (0005). */
   is_seed: boolean;
+  /** May form squads and reset demo tournaments (0006). Service-role writes only. */
+  is_organiser: boolean;
   created_at: Timestamptz;
   updated_at: Timestamptz;
 }
@@ -164,6 +166,7 @@ export type ProfileInsert = {
   bio?: string | null;
   is_active?: boolean;
   is_seed?: boolean;
+  is_organiser?: boolean;
   created_at?: Timestamptz;
   updated_at?: Timestamptz;
 }

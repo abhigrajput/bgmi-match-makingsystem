@@ -41,7 +41,7 @@ export default async function TournamentPage({ params }: Params) {
   if (!tournament) notFound();
 
   const [{ data: me }, { data: registrations, error: regError }] = await Promise.all([
-    supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle(),
+    supabase.from('profiles').select('id, is_organiser').eq('auth_user_id', user.id).maybeSingle(),
     supabase
       .from('tournament_registrations')
       .select('profile_id, desired_role, registered_at')
@@ -149,6 +149,7 @@ export default async function TournamentPage({ params }: Params) {
         summary={isFormationSummary(tournament.formation_summary) ? tournament.formation_summary : null}
         me={{
           profileId: me?.id ?? null,
+          isOrganiser: me?.is_organiser ?? false,
           registered: Boolean(mine),
           desiredRole: mine?.desired_role ?? null,
           profileComplete: complete,

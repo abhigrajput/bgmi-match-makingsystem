@@ -10,9 +10,9 @@ service-role key is read only in these route files.
 | Method | Path | Auth | Service role | Purpose |
 |---|---|---|---|---|
 | GET | `/api/public-stats` | none | no | Landing-page counts |
-| POST | `/api/tournaments/[slug]/match` | signed in | yes | Form squads |
+| POST | `/api/tournaments/[slug]/match` | organiser | yes | Form squads |
 | GET | `/api/tournaments/[slug]/squads` | signed in | yes | Read formed squads |
-| POST | `/api/tournaments/[slug]/reset` | signed in | yes | Reset a demo tournament |
+| POST | `/api/tournaments/[slug]/reset` | organiser | yes | Reset a demo tournament |
 | POST | `/api/matches/[id]/complete` | participant | yes (after check) | Mark a match played |
 | GET | `/auth/callback` | — | no | Supabase email-link exchange |
 | POST | `/auth/signout` | — | no | Sign out (POST only) |
@@ -39,6 +39,7 @@ Forms squads for an open tournament.
 | Status | When |
 |---|---|
 | 401 | No session |
+| 403 | Caller is not an organiser (`profiles.is_organiser`, 0006) |
 | 404 | Unknown slug |
 | 409 | Tournament not `open`; fewer registrations than `squad_size`; or another request claimed it first |
 | 500 | Formation or insert failed — inserted matches are deleted and the tournament re-opened |
@@ -92,7 +93,7 @@ only — no feedback, preferences or availability.
 | Status | When |
 |---|---|
 | 401 / 404 | as above |
-| 403 | Tournament is not `is_seed` — real tournaments are never reset |
+| 403 | Caller is not an organiser, or the tournament is not `is_seed` — real tournaments are never reset |
 | 200 | `{ "ok": true }` — matches deleted (participants and feedback cascade), status `open`, summary cleared |
 
 ## POST /api/matches/[id]/complete

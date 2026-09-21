@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { authenticate, isResponse, jsonError } from '@/lib/api/auth';
+import { authenticate, isResponse, jsonError, requireOrganiser } from '@/lib/api/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getTournamentBySlug } from '@/lib/tournaments/server';
 
@@ -10,13 +10,16 @@ export const dynamic = 'force-dynamic';
  * POST /api/tournaments/[slug]/reset -- undo squad formation on a DEMO
  * tournament so it can be formed live again.
  *
- * Refused (403) for any tournament that is not is_seed. Deleting a real
- * tournament's matches would destroy other players' match history and
- * feedback; the flag is what limits this route to demo data.
+ * Organisers only (403 otherwise). Also refused (403) for any tournament that
+ * is not is_seed: deleting a real tournament's matches would destroy other
+ * players' match history and feedback, and the flag is what limits this route
+ * to demo data.
  */
 export async function POST(_request: Request, { params }: { params: { slug: string } }) {
   const caller = await authenticate();
   if (isResponse(caller)) return caller;
+  const forbidden = requireOrganiser(caller, 'reset a demo tournament');
+  if (forbidden) return forbidden;
 
   const db = createAdminClient(process.env.SUPABASE_SERVICE_ROLE_KEY);
   const tournament = await getTournamentBySlug(db, params.slug);

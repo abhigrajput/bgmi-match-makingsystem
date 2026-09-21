@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 
-export type Caller = { userId: string; profileId: string | null };
+export type Caller = { userId: string; profileId: string | null; isOrganiser: boolean };
 
 export async function authenticate(): Promise<Caller | NextResponse> {
   const supabase = createClient();
@@ -23,10 +23,20 @@ export async function authenticate(): Promise<Caller | NextResponse> {
   }
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, is_organiser')
     .eq('auth_user_id', user.id)
     .maybeSingle();
-  return { userId: user.id, profileId: profile?.id ?? null };
+  return { userId: user.id, profileId: profile?.id ?? null, isOrganiser: profile?.is_organiser ?? false };
+}
+
+/**
+ * 403 unless the caller is an organiser (0006). Read from the caller's own
+ * profile row with their own session, which they cannot write this column of
+ * -- so the check cannot be satisfied by anything the caller controls.
+ */
+export function requireOrganiser(caller: Caller, action: string): NextResponse | null {
+  if (caller.isOrganiser) return null;
+  return NextResponse.json({ error: `Only tournament organisers can ${action}.` }, { status: 403 });
 }
 
 export function isResponse(value: unknown): value is NextResponse {

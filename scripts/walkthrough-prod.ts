@@ -54,7 +54,8 @@ async function main() {
   try {
     const { data: profile } = await admin.from('profiles').select('id').eq('auth_user_id', userId).single();
     const profileId = profile!.id;
-    await admin.from('profiles').update({ region: 'India-South' }).eq('id', profileId);
+    // Non-organiser first, to prove the route refuses; promoted below.
+    await admin.from('profiles').update({ region: 'India-South', is_organiser: false }).eq('id', profileId);
     await admin.from('player_preferences').insert({
       profile_id: profileId,
       primary_role: 'igl',
@@ -107,11 +108,17 @@ async function main() {
     const detail = await page(`/tournaments/${SLUG}`);
     step('Hubballi Weekend Cup page', detail.status === 200 && detail.text.includes('Hubballi Weekend Cup'), `status ${detail.status}`);
 
-    // Start from an open tournament, whatever state a previous run left.
-    await api(`/api/tournaments/${SLUG}/reset`, 'POST');
+    // Start from an open tournament, whatever state a previous run left. Done
+    // with the service role here because the tester is not an organiser yet.
     const { data: t } = await admin.from('tournaments').select('id').eq('slug', SLUG).single();
+    await admin.from('matches').delete().eq('tournament_id', t!.id);
+    await admin.from('tournaments').update({ status: 'open', formation_summary: null, formed_at: null }).eq('id', t!.id);
     const reg = await asUser.from('tournament_registrations').insert({ tournament_id: t!.id, profile_id: profileId, desired_role: 'igl' });
     step('Register (RLS insert as the user)', !reg.error, reg.error?.message ?? '');
+
+    const refused = await api(`/api/tournaments/${SLUG}/match`, 'POST');
+    step('Non-organiser cannot form squads (403)', refused.status === 403, `status ${refused.status}`);
+    await admin.from('profiles').update({ is_organiser: true }).eq('id', profileId);
 
     const formed = await api(`/api/tournaments/${SLUG}/match`, 'POST');
     const squads = (formed.body.squads ?? []) as { match_id: string; scoring_source: string; reasons: string[]; members: { profile_id: string }[] }[];

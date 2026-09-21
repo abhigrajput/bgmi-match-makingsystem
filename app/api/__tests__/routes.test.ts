@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  */
 
 const state = vi.hoisted(() => ({
-  caller: { userId: 'u1', profileId: 'p1' } as unknown,
+  caller: { userId: 'u1', profileId: 'p1', isOrganiser: true } as unknown,
   tournament: null as null | Record<string, unknown>,
   players: [] as unknown[],
   claimRows: [{ id: 't1' }] as unknown[] | null,
@@ -26,6 +26,8 @@ vi.mock('@/lib/api/auth', async () => {
     authenticate: vi.fn(async () => state.caller),
     isResponse: (v: unknown) => v instanceof NR,
     jsonError: (message: string, status: number) => NR.json({ error: message }, { status }),
+    requireOrganiser: (caller: { isOrganiser: boolean }, action: string) =>
+      caller.isOrganiser ? null : NR.json({ error: `Only tournament organisers can ${action}.` }, { status: 403 }),
   };
 });
 
@@ -89,7 +91,7 @@ const req = new Request('http://localhost/api');
 const slug = { params: { slug: 'hubballi-weekend-cup' } };
 
 beforeEach(() => {
-  state.caller = { userId: 'u1', profileId: 'p1' };
+  state.caller = { userId: 'u1', profileId: 'p1', isOrganiser: true };
   state.tournament = { id: 't1', status: 'open', squad_size: 4, is_seed: true, formation_summary: null };
   state.players = Array.from({ length: 8 }, (_, i) => ({ profileId: `p${i}` }));
   state.claimRows = [{ id: 't1' }];
@@ -103,6 +105,14 @@ describe('POST /api/tournaments/[slug]/match', () => {
   it('rejects signed-out callers with 401', async () => {
     state.caller = NextResponse.json({ error: 'Sign in' }, { status: 401 });
     expect((await formSquads(req, slug)).status).toBe(401);
+  });
+
+  it('403s a signed-in player who is not an organiser, before any privileged query', async () => {
+    state.caller = { userId: 'u2', profileId: 'p2', isOrganiser: false };
+    const res = await formSquads(req, slug);
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toMatch(/organisers/);
+    expect(state.updates).toHaveLength(0);
   });
 
   it('404s an unknown tournament', async () => {
@@ -144,6 +154,11 @@ describe('POST /api/tournaments/[slug]/match', () => {
 });
 
 describe('GET /api/tournaments/[slug]/squads', () => {
+  it('lets any signed-in player read squads, organiser or not', async () => {
+    state.caller = { userId: 'u2', profileId: 'p2', isOrganiser: false };
+    expect((await getSquads(req, slug)).status).toBe(200);
+  });
+
   it('requires a signed-in caller', async () => {
     state.caller = NextResponse.json({ error: 'Sign in' }, { status: 401 });
     expect((await getSquads(req, slug)).status).toBe(401);
@@ -157,6 +172,12 @@ describe('GET /api/tournaments/[slug]/squads', () => {
 });
 
 describe('POST /api/tournaments/[slug]/reset', () => {
+  it('403s a player who is not an organiser and deletes nothing', async () => {
+    state.caller = { userId: 'u2', profileId: 'p2', isOrganiser: false };
+    expect((await resetDemo(req, slug)).status).toBe(403);
+    expect(state.deletes).toHaveLength(0);
+  });
+
   it('refuses non-demo tournaments with 403 and deletes nothing', async () => {
     state.tournament = { ...state.tournament!, is_seed: false };
     expect((await resetDemo(req, slug)).status).toBe(403);

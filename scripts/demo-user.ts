@@ -34,7 +34,11 @@ async function main() {
   const { data: profile, error } = await db.from('profiles').select('id').eq('auth_user_id', user.id).single();
   if (error || !profile) throw new Error('No profile row -- is the on_auth_user_created trigger installed?');
 
-  await db.from('profiles').update({ region: 'India-South', bio: 'IGL main. Evenings after 8.' }).eq('id', profile.id);
+  // Organiser (0006), so walkthroughs and screenshots can form squads.
+  await db
+    .from('profiles')
+    .update({ region: 'India-South', bio: 'IGL main. Evenings after 8.', is_organiser: true })
+    .eq('id', profile.id);
   await db.from('player_preferences').upsert(
     {
       profile_id: profile.id,

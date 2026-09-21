@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { authenticate, isResponse, jsonError } from '@/lib/api/auth';
+import { authenticate, isResponse, jsonError, requireOrganiser } from '@/lib/api/auth';
 import { runFormation } from '@/lib/scoring/formation';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/tournaments/[slug]/match -- form squads for a tournament.
  *
- * 1. Authenticate the caller (401).
+ * 1. Authenticate the caller (401); only organisers may form squads (403).
  * 2. 404 for an unknown slug; 409 unless the tournament is open and has at
  *    least one squad's worth of registrations.
  * 3. Claim the tournament by flipping status open -> matched in ONE
@@ -27,12 +27,14 @@ export const dynamic = 'force-dynamic';
  * 5. Insert matches + participants and the formation summary. On any failure,
  *    delete what was inserted and re-open the tournament.
  *
- * Any signed-in player may trigger formation. There is no organiser role in
- * this prototype; docs/security.md records that as a known limitation.
+ * The organiser check comes before the service-role client exists, so a
+ * non-organiser's request never reaches a privileged query.
  */
 export async function POST(_request: Request, { params }: { params: { slug: string } }) {
   const caller = await authenticate();
   if (isResponse(caller)) return caller;
+  const forbidden = requireOrganiser(caller, 'form squads');
+  if (forbidden) return forbidden;
 
   const db = createAdminClient(process.env.SUPABASE_SERVICE_ROLE_KEY);
 

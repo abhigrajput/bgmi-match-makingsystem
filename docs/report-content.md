@@ -187,7 +187,7 @@ through the REST API by `scripts/verify-prod.ts`.
 
 ## 9. Testing
 
-81 automated unit tests (Vitest) cover the compatibility components and
+84 automated unit tests (Vitest) cover the compatibility components and
 vetoes, the optimiser's invariants (no vetoed pair, no duplicate player,
 determinism, beats the baseline on a fixed fixture), the model and its
 fallback, and the API routes' status codes and rollback. A 24-check catalog
@@ -238,8 +238,8 @@ for organisers who must justify their squads.
 
 - Retrain on real post-match feedback and compare with the synthetic-trained
   model on held-out real matches.
-- An organiser role, live queue-based matchmaking, and party (pre-made)
-  support.
+- Per-tournament organisers, live queue-based matchmaking, and party
+  (pre-made) support.
 - Squad-level (not pairwise) models and gradient-boosted trees once data
   volume allows.
 - Probability calibration and learned blend weights.

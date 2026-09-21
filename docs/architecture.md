@@ -29,7 +29,7 @@ Three runtime participants:
    caller first. The squad-formation engine and the trained model are plain
    TypeScript modules inside this process.
 3. **Supabase.** Postgres with row-level security, plus Auth. The schema is
-   `supabase/migrations/0001–0005`; the database, not the web tier, is the
+   `supabase/migrations/0001–0006`; the database, not the web tier, is the
    security boundary.
 
 Offline, `scripts/` (run with `tsx`) seeds synthetic data, trains the model and
@@ -58,8 +58,9 @@ lib/
   tournaments/       service-role data layer (takes a client, never makes one)
   supabase/          browser / server / middleware / admin clients
   validation/ player/ api/
-scripts/             seed, train, verify-prod, e2e-local, screenshots, demo-user
-supabase/            migrations 0001-0005, catalog verify scripts
+scripts/             seed, train, verify-prod, e2e-local, walkthrough-prod,
+                     screenshots, demo-user, set-organiser
+supabase/            migrations 0001-0006, catalog verify scripts
 types/database.ts    hand-maintained schema types
 ```
 
@@ -67,7 +68,7 @@ Rules that hold across the tree:
 
 - **`lib/scoring/` does no I/O.** Everything that scores, forms or evaluates
   squads takes plain objects and returns plain objects. That is why the same
-  code runs in an API route, in the trainer, and in 81 unit tests.
+  code runs in an API route, in the trainer, and in 84 unit tests.
 - **The service-role key is read only in `app/api/**/route.ts` and `scripts/`.**
   `lib/supabase/admin.ts` accepts the key as an argument rather than reading it,
   so `grep SUPABASE_SERVICE_ROLE_KEY` is a complete audit of its use.
@@ -96,7 +97,7 @@ sequenceDiagram
     participant R as POST /api/tournaments/[slug]/match
     participant DB as Supabase
     U->>R: Form squads (session cookie)
-    R->>DB: getUser() — 401 if none
+    R->>DB: getUser() + is_organiser — 401 if none, 403 if not an organiser
     R->>DB: tournament + registrants (service role)
     R->>R: 404 / 409 checks
     R->>DB: UPDATE status open→matched WHERE status='open'

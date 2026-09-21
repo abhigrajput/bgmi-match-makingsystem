@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3, RotateCcw, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
+import { BarChart3, RotateCcw, ShieldCheck, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
 
 import { ComparisonCharts } from '@/components/charts/comparison-charts';
 import { Avatar, Badge, Button, EmptyState, RoleBadge, StatCard } from '@/components/ui';
@@ -40,6 +40,8 @@ type Props = {
   summary: FormationSummary | null;
   me: {
     profileId: string | null;
+    /** 0006. The API routes enforce this; hiding the buttons is courtesy. */
+    isOrganiser: boolean;
     registered: boolean;
     desiredRole: PlayerRole | null;
     profileComplete: boolean;
@@ -142,7 +144,7 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
     }
   }
 
-  const canForm = status === 'open' && players.length >= squadSize;
+  const canForm = me.isOrganiser && status === 'open' && players.length >= squadSize;
   const unit = squadSize === 2 ? 'duos' : 'squads';
 
   // ---- registration panel ----------------------------------------------------
@@ -251,7 +253,9 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
         body={
           canForm
             ? `${players.length} players are registered. Form ${unit} to see who plays with whom, and why.`
-            : `At least ${squadSize} registered players are needed before ${unit} can be formed.`
+            : players.length < squadSize
+              ? `At least ${squadSize} registered players are needed before ${unit} can be formed.`
+              : `${players.length} players are registered. The organiser forms ${unit} once registration fills up.`
         }
         action={
           canForm ? (
@@ -336,7 +340,17 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
     <div className="space-y-6">
       <section aria-label="Registration" className="rounded-card border border-border bg-surface p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">{registration}</div>
+          <div className="min-w-0 flex-1">
+            {registration}
+            {me.isOrganiser ? (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-accent">
+                <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
+                You are an organiser: you can form squads for this tournament.
+              </p>
+            ) : status === 'open' ? (
+              <p className="mt-2 text-xs text-muted">Squads are formed by the tournament organiser once registration fills up.</p>
+            ) : null}
+          </div>
           <div className="flex flex-wrap gap-2">
             {canForm ? (
               <Button onClick={formSquads} loading={forming}>
@@ -344,7 +358,7 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
                 Form {unit}
               </Button>
             ) : null}
-            {isSeed && status === 'matched' ? (
+            {me.isOrganiser && isSeed && status === 'matched' ? (
               <Button variant="danger" onClick={() => setConfirmReset(true)}>
                 <RotateCcw aria-hidden="true" className="h-4 w-4" />
                 Reset demo

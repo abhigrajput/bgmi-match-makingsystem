@@ -81,7 +81,7 @@ and `docs/database.md`. Numbers are from `docs/ml-results.md` and
 - *Visual:* dashboard + mobile (`03-dashboard.png`, `13-mobile-dashboard.png`)
 
 **14. Testing and quality**
-- 81 unit tests, 24 catalog checks, 36 end-to-end checks incl. RLS attacks
+- 84 unit tests, 24 catalog checks, 36 end-to-end checks incl. RLS attacks
 - CI: typecheck, lint, test, build on every push
 - *Visual:* terminal output of the test run
 

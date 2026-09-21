@@ -410,3 +410,19 @@ attack it blocks. Summary in [`security.md`](security.md).
 `supabase/tests/phase_b_verify.sql` checks all of the above from the catalog
 (24 checks); `phase2_verify.sql` now reports stale counts (8 tables, 18
 policies), which is expected after 0005.
+
+---
+
+## 6. Migration 0006: organiser role
+
+`profiles.is_organiser boolean not null default false`. Only organisers may
+form squads or reset a demo tournament; the two API routes return 403
+otherwise.
+
+Players cannot grant it to themselves. 0003 revoked table-level UPDATE on
+`profiles` from `authenticated` and granted only five named columns, so a
+column added later is not client-writable; 0006 also revokes UPDATE on
+`is_organiser` explicitly, so a future broad grant cannot silently re-open it.
+Profile INSERT is revoked, so a second profile row is not a way round it
+either. The role is set only by `scripts/set-organiser.ts` with the service
+role. `supabase/tests/0006_verify.sql` checks all of this (5 checks).
