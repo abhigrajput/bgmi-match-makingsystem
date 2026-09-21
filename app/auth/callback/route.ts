@@ -62,5 +62,16 @@ export async function GET(request: NextRequest) {
    * marker with no detail in it, since it ends up in the user's history and in
    * any referrer header the login page emits.
    */
+  /**
+   * No ?code= at all: an implicit-flow link (Supabase invites and recovery
+   * emails), whose session is in the URL fragment where this server route
+   * cannot see it. Hand it to /accept-invite, which reads the fragment in the
+   * browser. The browser re-attaches the fragment because this redirect's
+   * Location has none of its own.
+   */
+  if (!code) {
+    return NextResponse.redirect(`${origin}/accept-invite?next=${encodeURIComponent(next)}`);
+  }
+
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
 }
