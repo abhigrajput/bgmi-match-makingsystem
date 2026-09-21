@@ -37,6 +37,14 @@
   --role-sniper: 34 211 238;
   --role-support: 52 211 153;
   --role-flex: 251 191 36;
+
+  /* Chart series, validated with the dataviz palette checker against the
+     dark surface (lightness band, CVD separation, 3:1 contrast). Deeper than
+     --data/--accent on purpose: the UI tints are too light for filled marks. */
+  --chart-1: #0fa3c0; /* optimizer / primary series */
+  --chart-2: #c27d08; /* baseline / comparison series */
+  --chart-grid: rgb(38 43 54);
+  --chart-axis: rgb(138 145 160);
 }
 
 @media (prefers-color-scheme: light) {
@@ -65,6 +73,11 @@
     --role-sniper: 8 131 158;
     --role-support: 5 140 95;
     --role-flex: 170 110 0;
+
+    --chart-1: #08839e;
+    --chart-2: #c47600;
+    --chart-grid: rgb(222 226 232);
+    --chart-axis: rgb(88 96 112);
   }
 }
 

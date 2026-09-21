@@ -144,7 +144,7 @@ export default async function HomePage() {
         <section className="relative overflow-hidden">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[56rem] -translate-x-1/2 rounded-full bg-accent/10 blur-3xl"
+            className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[56rem] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,rgb(var(--accent)/0.14),transparent_65%)]"
           />
           <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-12 md:px-8 md:pt-20">
             <p className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
