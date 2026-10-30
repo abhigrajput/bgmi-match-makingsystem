@@ -229,6 +229,11 @@ async function main() {
     let message = await submitAndRead(page);
     check('signup: 9-character password is refused', /at least 10 characters/i.test(message), message);
 
+    await fillSignup(page, { email, ign });
+    await page.uncheck('input#consent');
+    message = await submitAndRead(page);
+    check('signup: refused without the consent box', /Tick the box/i.test(message) && pathOf(page) === '/signup', message);
+
     // Signup.
     await fillSignup(page, { email, ign });
     message = await submitAndRead(page);

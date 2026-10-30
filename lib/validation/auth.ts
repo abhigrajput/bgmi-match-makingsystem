@@ -127,6 +127,8 @@ export const signupSchema = z.object({
   bgmi_ign: bgmiIgnSchema,
   region: signupRegionSchema,
   primary_role: signupRoleSchema,
+  // Required but not stored: there is no consent column (Task.md, ASSUMPTIONS).
+  consent: z.literal('on', { message: 'Tick the box to agree before creating an account.' }),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

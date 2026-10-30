@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useFormState } from 'react-dom';
 
 import { signup, type AuthFormState } from '../actions';
@@ -204,6 +205,33 @@ export function SignupForm() {
           At least 10 characters.
         </p>
         <FieldError id="password-error" messages={state.fieldErrors?.password} />
+      </div>
+
+      <div>
+        <div className="flex items-start gap-2">
+          <input
+            id="consent"
+            name="consent"
+            type="checkbox"
+            required
+            defaultChecked={state.values?.consent === 'on'}
+            aria-describedby={state.fieldErrors?.consent ? 'consent-error' : undefined}
+            aria-invalid={state.fieldErrors?.consent ? true : undefined}
+            className="mt-3.5 h-4 w-4 shrink-0 rounded border-border accent-[rgb(var(--accent))]"
+          />
+          <label htmlFor="consent" className="min-h-11 py-2.5 text-sm text-muted">
+            I am at least 16 and agree to the{' '}
+            <Link href="/terms" target="_blank" className="inline-flex min-h-11 min-w-11 items-center justify-center font-medium text-data hover:underline">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" target="_blank" className="inline-flex min-h-11 min-w-11 items-center justify-center font-medium text-data hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </label>
+        </div>
+        <FieldError id="consent-error" messages={state.fieldErrors?.consent} />
       </div>
 
       <SubmitButton label="Create account" />

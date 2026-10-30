@@ -136,6 +136,7 @@ export async function signup(
     bgmi_ign: String(formData.get('bgmi_ign') ?? ''),
     region: String(formData.get('region') ?? ''),
     primary_role: String(formData.get('primary_role') ?? ''),
+    consent: String(formData.get('consent') ?? ''),
   };
 
   const echo = {
@@ -144,6 +145,7 @@ export async function signup(
     bgmi_ign: raw.bgmi_ign,
     region: raw.region,
     primary_role: raw.primary_role,
+    consent: raw.consent,
   };
 
   const parsed = signupSchema.safeParse(raw);

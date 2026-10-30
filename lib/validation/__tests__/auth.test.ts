@@ -9,6 +9,7 @@ const valid = {
   bgmi_ign: 'Player_One',
   region: 'India-South',
   primary_role: 'sniper',
+  consent: 'on',
 };
 
 const errorsFor = (input: Record<string, unknown>) => {
@@ -30,6 +31,7 @@ describe('signupSchema', () => {
     ['region', ''],
     ['region', 'Mars'],
     ['primary_role', ''],
+    ['consent', ''],
     ['primary_role', 'captain'],
   ])('rejects %s = %j', (field, value) => {
     expect(errorsFor({ ...valid, [field]: value })).toEqual([field]);
