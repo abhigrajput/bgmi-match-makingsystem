@@ -18,8 +18,9 @@ const VARIANT: Record<ButtonVariant, string> = {
 };
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
+  // h-11 is 44 px, the smallest tap target allowed (Design.md).
+  sm: 'h-11 px-3 text-xs gap-1.5',
+  md: 'h-11 px-4 text-sm gap-2',
   lg: 'h-12 px-6 text-base gap-2',
 };
 

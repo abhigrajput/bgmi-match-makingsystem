@@ -126,7 +126,7 @@ export default async function TournamentsPage({
           }
           action={
             filter === 'all' ? undefined : (
-              <Link href="/tournaments" className="text-sm font-medium text-data hover:underline">
+              <Link href="/tournaments" className="inline-flex min-h-11 min-w-11 items-center text-sm font-medium text-data hover:underline">
                 Show all tournaments
               </Link>
             )

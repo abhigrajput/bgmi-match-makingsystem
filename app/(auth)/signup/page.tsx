@@ -5,10 +5,14 @@ import { redirect } from 'next/navigation';
 import { createClient, isSupabaseUnreachable } from '@/lib/supabase/server';
 
 import { SignupForm } from './signup-form';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Create an account',
-};
+export const metadata: Metadata = pageMetadata({
+  title: 'Create an account · SquadSync',
+  description:
+    'Create a SquadSync player card with your in-game name, region and main role.',
+  path: '/signup',
+});
 
 export default async function SignupPage() {
   // Same reasoning as the login page: a signed-in user on a signup form can
@@ -37,7 +41,7 @@ export default async function SignupPage() {
 
       <p className="mt-6 text-sm text-muted">
         Already have an account?{' '}
-        <Link href="/login" className="font-medium text-data hover:underline">
+        <Link href="/login" className="inline-flex min-h-11 min-w-11 items-center font-medium text-data hover:underline">
           Sign in
         </Link>
         .

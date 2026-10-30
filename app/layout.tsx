@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 
 import { ToastProvider } from '@/components/ui/toast';
-import { APP_NAME, APP_TAGLINE } from '@/lib/site';
+import { APP_NAME, APP_TAGLINE, siteUrl } from '@/lib/site';
 
 import './globals.css';
 
@@ -15,6 +15,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
     default: `${APP_NAME}: ${APP_TAGLINE}`,
     template: `%s · ${APP_NAME}`,

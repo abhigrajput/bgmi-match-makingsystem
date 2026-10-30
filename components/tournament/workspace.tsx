@@ -171,11 +171,11 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
     ) : !me.profileComplete ? (
       <p className="text-sm text-muted">
         Finish your{' '}
-        <Link href="/profile" className="font-medium text-data hover:underline">
+        <Link href="/profile" className="inline-flex min-h-11 min-w-11 items-center font-medium text-data hover:underline">
           preferences
         </Link>{' '}
         and{' '}
-        <Link href="/profile/availability" className="font-medium text-data hover:underline">
+        <Link href="/profile/availability" className="inline-flex min-h-11 min-w-11 items-center font-medium text-data hover:underline">
           availability
         </Link>{' '}
         to register.

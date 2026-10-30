@@ -134,7 +134,7 @@ export default async function ProfilePage() {
           <CardTitle>Availability</CardTitle>
           <Link
             href="/profile/availability"
-            className="text-sm font-medium text-data hover:underline"
+            className="inline-flex min-h-11 min-w-11 items-center text-sm font-medium text-data hover:underline"
           >
             Edit windows
           </Link>

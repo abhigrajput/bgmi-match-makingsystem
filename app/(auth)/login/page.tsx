@@ -7,10 +7,14 @@ import { SERVICE_UNAVAILABLE_MESSAGE } from '@/lib/auth/errors';
 import { createClient, isSupabaseUnreachable } from '@/lib/supabase/server';
 
 import { LoginForm } from './login-form';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Sign in',
-};
+export const metadata: Metadata = pageMetadata({
+  title: 'Sign in · SquadSync',
+  description:
+    'Sign in to SquadSync to see your squads, tournaments and match feedback.',
+  path: '/login',
+});
 
 /**
  * A server component wrapping a client form.
@@ -75,14 +79,14 @@ export default async function LoginPage({
       <LoginForm />
 
       <p className="mt-4 text-sm">
-        <Link href="/forgot-password" className="font-medium text-data hover:underline">
+        <Link href="/forgot-password" className="inline-flex min-h-11 min-w-11 items-center font-medium text-data hover:underline">
           Forgot your password?
         </Link>
       </p>
 
       <p className="mt-2 text-sm text-muted">
         No account?{' '}
-        <Link href="/signup" className="font-medium text-data hover:underline">
+        <Link href="/signup" className="inline-flex min-h-11 min-w-11 items-center font-medium text-data hover:underline">
           Create one
         </Link>
         .

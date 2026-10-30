@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 
 import { AcceptInvite } from './accept-invite';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Accept your invite',
-};
+export const metadata: Metadata = pageMetadata({
+  title: 'Accept your invite · SquadSync',
+  description:
+    'Accept your SquadSync invite and set a password for your account.',
+  path: '/accept-invite',
+});
 
 /**
  * Landing page for Supabase invite (and password-recovery) links.

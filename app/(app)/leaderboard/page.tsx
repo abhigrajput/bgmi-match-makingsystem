@@ -127,7 +127,7 @@ export default async function LeaderboardPage({
             Apply
           </Button>
           {filtered ? (
-            <Link href="/leaderboard" className="self-center text-sm text-data hover:underline">
+            <Link href="/leaderboard" className="inline-flex min-h-11 min-w-11 items-center self-center text-sm text-data hover:underline">
               Clear
             </Link>
           ) : null}

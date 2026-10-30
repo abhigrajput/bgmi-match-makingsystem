@@ -194,7 +194,7 @@ export default async function AnalyticsPage() {
             {latest ? (
               <p className="mt-1 text-xs text-muted">
                 Latest formation:{' '}
-                <Link href={`/tournaments/${latest.slug}`} className="text-data hover:underline">
+                <Link href={`/tournaments/${latest.slug}`} className="inline-flex min-h-11 min-w-11 items-center text-data hover:underline">
                   {latest.name}
                 </Link>
                 , {formatDateTime(latest.formed_at)}
@@ -211,7 +211,7 @@ export default async function AnalyticsPage() {
               title="No squads formed yet"
               body="Form squads in a tournament to compare the optimizer with rank-only grouping."
               action={
-                <Link href="/tournaments" className="text-sm font-medium text-data hover:underline">
+                <Link href="/tournaments" className="inline-flex min-h-11 min-w-11 items-center text-sm font-medium text-data hover:underline">
                   Go to tournaments
                 </Link>
               }

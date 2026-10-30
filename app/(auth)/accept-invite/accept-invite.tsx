@@ -178,7 +178,7 @@ export function AcceptInvite({
         <Banner tone="error">{phase.message}</Banner>
         <p className="text-sm text-muted">
           Already set a password?{' '}
-          <Link href="/login" className="font-medium text-data hover:underline">
+          <Link href="/login" className="inline-flex min-h-11 min-w-11 items-center font-medium text-data hover:underline">
             Sign in
           </Link>
           .

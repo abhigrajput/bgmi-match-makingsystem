@@ -1,7 +1,11 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { MobileTabBar, MobileTopBar, Sidebar } from '@/components/shell/nav';
+import { NO_INDEX } from '@/lib/seo';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = { robots: NO_INDEX };
 
 /**
  * Shell for every signed-in page.
