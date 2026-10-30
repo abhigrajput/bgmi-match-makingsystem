@@ -16,6 +16,12 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
+import {
+  AUTH_FORM_MESSAGES,
+  classifyAuthError,
+  logAuthFailure,
+  type AuthFailure,
+} from '@/lib/auth/errors';
 import { createClient } from '@/lib/supabase/server';
 import { loginSchema, signupSchema } from '@/lib/validation/auth';
 
@@ -74,17 +80,27 @@ export async function login(
 
   if (error) {
     /**
-     * One message for every failure mode, attached to the form rather than to
-     * a field. Distinguishing "no such account" from "wrong password" turns
-     * this form into an account-enumeration oracle: an attacker submits a list
-     * of email addresses and learns which ones are registered, which is a
-     * finding on its own and the first step of a credential-stuffing run.
+     * Attached to the form rather than to a field. Wrong email and wrong
+     * password share one message: distinguishing "no such account" from "wrong
+     * password" turns this form into an account-enumeration oracle.
      *
-     * The real error is not logged either -- Supabase's message can contain
-     * the submitted address.
+     * But an outage or a rate limit is NOT a wrong password, and saying so
+     * sends users with correct credentials off to reset them (Task.md, H).
+     * Those get their own messages. Kinds that cannot arise from a sign-in
+     * fall back to the generic one.
      */
+    const kind = classifyAuthError(error);
+    logAuthFailure('login', kind, error);
+
+    const loginKinds = new Set<AuthFailure>([
+      'invalid_credentials',
+      'email_not_confirmed',
+      'rate_limited',
+      'service_unavailable',
+    ]);
+
     return {
-      formError: 'Incorrect email or password.',
+      formError: AUTH_FORM_MESSAGES[loginKinds.has(kind) ? kind : 'unknown'],
       values: { email: parsed.data.email },
     };
   }
@@ -159,49 +175,40 @@ export async function signup(
 
   if (error) {
     /**
-     * The bgmi_ign collision path.
+     * handle_new_user() raises 23505 for a taken IGN, which rolls back the
+     * auth.users insert with it -- no half-created account, and retrying with
+     * another name works. How that and the other failures are told apart is in
+     * lib/auth/errors.ts.
      *
-     * handle_new_user() raises SQLSTATE 23505 with a message naming the taken
-     * IGN, and that abort rolls back the auth.users insert with it -- so there
-     * is no half-created account and retrying with a different name works.
-     *
-     * Getting that error back out through GoTrue is the awkward part. It sits
-     * between the trigger and this code and does not preserve SQLSTATE, so the
-     * check has to cover both what it passes through and what it replaces the
-     * error with. `Database error saving new user` is GoTrue's generic wrapper
-     * for any exception raised by this trigger -- and since the IGN collision
-     * is the only failure the trigger raises by design, attributing it to that
-     * field is right far more often than a generic message would be.
+     * Problems the user fixes in one field are attached to that field. A
+     * duplicate email is attached to the email field because Supabase has
+     * already disclosed it -- hiding it would leave the user stuck. Everything
+     * else (rate limit, outage) is about the submission as a whole.
      */
-    const message = error.message ?? '';
-    const isIgnCollision =
-      message.includes('already taken') ||
-      message.includes('bgmi_ign') ||
-      message.includes('Database error saving new user');
+    const kind = classifyAuthError(error);
+    logAuthFailure('signup', kind, error);
 
-    if (isIgnCollision) {
-      return {
-        fieldErrors: {
-          bgmi_ign: [
-            'That in-game name is already taken. Choose another one.',
-          ],
-        },
-        values: echo,
-      };
-    }
+    const field =
+      kind === 'ign_taken'
+        ? 'bgmi_ign'
+        : kind === 'email_taken'
+          ? 'email'
+          : kind === 'weak_password'
+            ? 'password'
+            : null;
 
-    if (message.toLowerCase().includes('already registered')) {
-      // Supabase's own wording for a duplicate email. This one is attached to
-      // the field because Supabase has already disclosed it -- pretending
-      // otherwise would leave the user stuck with no idea what to change.
+    if (field) {
       return {
-        fieldErrors: { email: ['An account with this email already exists.'] },
+        fieldErrors: { [field]: [AUTH_FORM_MESSAGES[kind]] },
         values: echo,
       };
     }
 
     return {
-      formError: 'Could not create the account. Please try again.',
+      formError:
+        kind === 'rate_limited' || kind === 'service_unavailable'
+          ? AUTH_FORM_MESSAGES[kind]
+          : 'Could not create the account. Please try again.',
       values: echo,
     };
   }
