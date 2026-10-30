@@ -80,14 +80,10 @@ export async function updateSession(
   });
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    // Fail closed on auth, open on routing: report no user so protected
-    // prefixes redirect to /login, and let public pages render. Throwing here
-    // takes down every route, including ones that never touch Supabase.
-    console.error(
-      'Supabase middleware is missing configuration: NEXT_PUBLIC_SUPABASE_URL ' +
-        'and NEXT_PUBLIC_SUPABASE_ANON_KEY were not set at build time.',
-    );
-    return { response, user: null, unavailable: false };
+    // Root middleware answers this case before calling here. Reported as
+    // unavailable rather than thrown: throwing takes down every route,
+    // including ones that never touch Supabase.
+    return { response, user: null, unavailable: true };
   }
 
   const supabase = createServerClient<Database>(

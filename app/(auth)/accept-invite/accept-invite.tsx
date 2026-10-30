@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Hint, Label } from '@/components/ui/label';
 import { AUTH_FORM_MESSAGES, classifyAuthError } from '@/lib/auth/errors';
 import { createClient } from '@/lib/supabase/client';
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import { passwordSchema } from '@/lib/validation/auth';
 
 const COPY = {
@@ -69,6 +70,13 @@ export function AcceptInvite({
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
+    // createClient() throws without configuration, which would replace this
+    // whole page with the framework's error screen.
+    if (missingSupabaseConfig().length > 0) {
+      setPhase({ kind: 'invalid', message: AUTH_FORM_MESSAGES.service_unavailable });
+      return;
+    }
+
     const supabase = createClient();
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     window.history.replaceState(null, '', window.location.pathname + window.location.search);

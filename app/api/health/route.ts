@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import { fetchWithTimeout } from '@/lib/supabase/fetch-timeout';
 import type { Database } from '@/types/database';
 
@@ -14,8 +15,9 @@ import type { Database } from '@/types/database';
  *
  * The database read is public_stats() through the anon key: granted to anon
  * already, a definer function returning three counts, cheap at this size. Only
- * the outcome is returned, never the counts, the error text or any config --
- * this route is public and has nothing to say beyond "ok" or "unavailable".
+ * the outcome is returned, never the counts, the error text or any config
+ * value -- this route is public and has nothing to say beyond "ok" or
+ * "unavailable", plus, for a broken build, the NAMES of the missing variables.
  */
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +31,10 @@ export async function GET() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    return NextResponse.json({ status: 'misconfigured' }, { status: 503, headers: NO_STORE });
+    return NextResponse.json(
+      { status: 'misconfigured', missing: missingSupabaseConfig() },
+      { status: 503, headers: NO_STORE },
+    );
   }
 
   const started = Date.now();

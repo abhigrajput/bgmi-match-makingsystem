@@ -23,6 +23,7 @@ import { cookies, headers } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import {
   fetchWithTimeout,
   SERVER_FETCH_TIMEOUT_MS,
@@ -31,11 +32,13 @@ import {
 import type { Database } from '@/types/database';
 
 /**
- * True when middleware already tried Supabase for this request and got no
- * answer. Public pages check it to render signed out straight away instead of
+ * True when this request cannot get an answer from Supabase: the build has no
+ * configuration for it, or middleware already tried and got nothing. Public
+ * pages check it to render signed out straight away instead of throwing, or
  * spending their own timeout on the same outage.
  */
 export function isSupabaseUnreachable(): boolean {
+  if (missingSupabaseConfig().length > 0) return true;
   return headers().get(SUPABASE_UNREACHABLE_HEADER) === '1';
 }
 

@@ -23,6 +23,7 @@ import {
   type AuthFailure,
 } from '@/lib/auth/errors';
 import { siteUrl } from '@/lib/site';
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import { createClient, createEmailLinkClient } from '@/lib/supabase/server';
 import { emailSchema, loginSchema, signupSchema } from '@/lib/validation/auth';
 
@@ -74,6 +75,10 @@ export async function login(
       // response bodies.
       values: { email: raw.email },
     };
+  }
+
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable, values: { email: parsed.data.email } };
   }
 
   const supabase = createClient();
@@ -148,6 +153,10 @@ export async function signup(
       fieldErrors: z.flattenError(parsed.error).fieldErrors,
       values: echo,
     };
+  }
+
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable, values: echo };
   }
 
   const supabase = createClient();
@@ -280,6 +289,10 @@ export async function resendConfirmation(
     };
   }
 
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable };
+  }
+
   const { error } = await createEmailLinkClient().auth.resend({
     type: 'signup',
     email: parsed.data,
@@ -326,6 +339,10 @@ export async function requestPasswordReset(
       fieldErrors: { email: ['Enter a valid email address.'] },
       values: { email: raw },
     };
+  }
+
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable, values: { email: parsed.data } };
   }
 
   const { error } = await createEmailLinkClient().auth.resetPasswordForEmail(parsed.data, {

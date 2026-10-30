@@ -9,11 +9,15 @@
 
 import { NextResponse } from 'next/server';
 
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import { createClient } from '@/lib/supabase/server';
 
 export type Caller = { userId: string; profileId: string | null; isOrganiser: boolean };
 
 export async function authenticate(): Promise<Caller | NextResponse> {
+  if (missingSupabaseConfig().length > 0) {
+    return NextResponse.json({ error: 'Service unavailable.' }, { status: 503 });
+  }
   const supabase = createClient();
   const {
     data: { user },

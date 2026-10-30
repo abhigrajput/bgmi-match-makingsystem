@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import {
   MIDDLEWARE_PROTECTED_TIMEOUT_MS,
   MIDDLEWARE_PUBLIC_TIMEOUT_MS,
@@ -69,6 +70,20 @@ function hasAuthCookie(request: NextRequest): boolean {
 
 export async function middleware(request: NextRequest) {
   const isProtectedRoute = isProtected(request.nextUrl.pathname);
+
+  // A build without Supabase settings: the same answer as an outage, with or
+  // without a cookie, because nobody's session can be checked. Names only.
+  const missingConfig = missingSupabaseConfig();
+  if (missingConfig.length > 0) {
+    console.error(`Supabase is not configured, missing at build time: ${missingConfig.join(', ')}`);
+    if (isProtectedRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.search = '?error=service';
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
 
   /**
    * No session cookie: decided without a network call. Public pages render;
