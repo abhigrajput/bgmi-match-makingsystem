@@ -221,11 +221,11 @@ export function SignupForm() {
           />
           <label htmlFor="consent" className="min-h-11 py-2.5 text-sm text-muted">
             I am at least 16 and agree to the{' '}
-            <Link href="/terms" target="_blank" className="inline-flex min-h-11 items-center font-medium text-data hover:underline">
+            <Link href="/terms" target="_blank" className="inline-flex min-h-11 min-w-11 items-center justify-center font-medium text-data hover:underline">
               Terms
             </Link>{' '}
             and{' '}
-            <Link href="/privacy" target="_blank" className="inline-flex min-h-11 items-center font-medium text-data hover:underline">
+            <Link href="/privacy" target="_blank" className="inline-flex min-h-11 min-w-11 items-center justify-center font-medium text-data hover:underline">
               Privacy Policy
             </Link>
             .
