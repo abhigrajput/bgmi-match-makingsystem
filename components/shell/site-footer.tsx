@@ -7,6 +7,8 @@ import { CopyrightYear } from './copyright-year';
 const LINKS = [
   { href: '/', label: 'Home' },
   { href: '/contact', label: 'Contact' },
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms' },
   { href: '/login', label: 'Log in' },
   { href: '/signup', label: 'Sign up' },
 ];

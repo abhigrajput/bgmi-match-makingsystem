@@ -23,8 +23,8 @@ import { parseTarget, serviceClient, vercelBypass } from './lib/env';
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const MIN_TARGET = 44;
 const WIDTHS = [320, 375, 414, 768, 1024, 1440];
-const PUBLIC_ROUTES = ['/', '/contact', '/login', '/signup', '/forgot-password', '/reset-password'];
-const INDEXED_ROUTES = ['/', '/contact'];
+const PUBLIC_ROUTES = ['/', '/contact', '/privacy', '/terms', '/login', '/signup', '/forgot-password', '/reset-password'];
+const INDEXED_ROUTES = ['/', '/contact', '/privacy', '/terms'];
 const APP_ROUTES = ['/dashboard', '/tournaments', '/players', '/leaderboard', '/matches', '/analytics', '/profile', '/profile/availability'];
 
 function argValue(name: string): string | undefined {
