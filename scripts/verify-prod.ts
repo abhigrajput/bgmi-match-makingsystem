@@ -107,6 +107,12 @@ async function main() {
         ok: !!error,
         detail: error ? error.code ?? '' : 'anon could read catalog metadata',
       });
+      const { data: rows, error: profilesError } = await anon.from('profiles').select('id').limit(1);
+      checks.push({
+        name: 'profiles refused to anon',
+        ok: !!profilesError || (rows ?? []).length === 0,
+        detail: profilesError ? profilesError.code ?? '' : `${rows?.length ?? 0} rows returned`,
+      });
     }
   }
 
