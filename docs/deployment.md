@@ -20,6 +20,8 @@ Live: https://bgmi-match-makingsystem.vercel.app (Vercel, Git integration on
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | app | public; RLS limits it |
 | `SUPABASE_SERVICE_ROLE_KEY` | API routes (server only) | never `NEXT_PUBLIC_` |
 | `PROD_SUPABASE_URL`, `PROD_SUPABASE_SERVICE_ROLE_KEY` | `scripts/ --target prod` | `.env.production.local` only |
+| `NEXT_PUBLIC_SITE_URL` | app | public origin, no trailing slash; single source for absolute URLs |
+| `PROD_SUPABASE_ANON_KEY` | `scripts/verify-prod.ts --target prod` | `.env.production.local`; public, used to prove anon is refused |
 | `NEXT_DIST_DIR` | optional | build into another folder while `next dev` runs |
 
 ## Migration workflow (production)
