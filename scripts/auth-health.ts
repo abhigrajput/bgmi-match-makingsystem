@@ -157,8 +157,9 @@ async function main() {
 
   if (created.user) {
     try {
-      const { data: rows, error } = await db.from('profiles').select('auth_user_id').eq('bgmi_ign', ign);
+      const { data: rows, error } = await db.from('profiles').select('auth_user_id, region').eq('bgmi_ign', ign);
       report('trigger created the profile', !error && rows?.[0]?.auth_user_id === created.user.id, error?.code ?? '');
+      report('trigger saved the region (migration 0007 applied)', rows?.[0]?.region === 'India-South', String(rows?.[0]?.region));
 
       // A separate client: signing in on `db` would replace its service-role
       // session with this user's.
@@ -180,7 +181,13 @@ async function main() {
     const headers = bypassHeaders();
     for (const path of ['/api/health', '/login']) {
       try {
-        const response = await fetch(`${base}${path}`, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
+        // redirect: 'manual', or a protected preview's redirect to the Vercel
+        // login page, which answers 200, would count as a pass.
+        const response = await fetch(`${base}${path}`, {
+          headers,
+          redirect: 'manual',
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
         report(`deployment ${path}`, response.ok, `HTTP ${response.status}`);
       } catch (error) {
         report(`deployment ${path}`, false, error instanceof Error ? error.name : 'failed');
