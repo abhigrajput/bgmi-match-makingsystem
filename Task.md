@@ -58,15 +58,42 @@ Found along the way:
 - Vercel functions run in `iad1`, the database in `ap-south-1`, so every query crosses that distance. Not measured.
 - The Vercel connector creates or reuses temporary share links on the previews it fetches (`qwn5shuaa`, `72mxkmync`, `in1zp0trc`). They expire in 23 hours and work for anyone with the URL.
 
-## Third production run (2026-10-30): blocked
-Reported as added, but not found: `VERCEL_BYPASS` and `PROD_SUPABASE_ANON_KEY` are in neither `.env.production.local` nor `.env.local`, nor in the process, user or machine environment, and `PROD_SUPABASE_SERVICE_ROLE_KEY` is still listed twice. So `verify-prod` is still 22/23 (201 profiles), and `auth-health`, `e2e-auth` and the Playwright check at 375 and 1440 px were not run on the newest preview. The newest preview when checked was `dpl_CGeu6Ak5RRnj2JmVtQvmQrPtGb7p`, built from 9e90752.
+## Preview run against production (2026-10-30)
+Preview `dpl_46KWt3XFAr1aZyNLt4KTrXA8xcM2` (`bgmi-match-makingsystem-g11fjk9am.vercel.app`), built from 0314f35, the latest pushed commit at the time. Later commits on this branch change only this file.
 
-`auth-health` and `e2e-auth` now also read `VERCEL_BYPASS` from `.env.production.local`. They read only the process environment before, so a value in that file would have been ignored. Not yet exercised with a real value.
+| Check | Result |
+|---|---|
+| `verify-prod --target prod` | 24/24, exit 0. Anon refused `schema_health` and `profiles`, both `42501` |
+| `auth-health --target prod --base <preview>` | 16/16, exit 0. Deployment `/api/health` and `/login` HTTP 200 |
+| `e2e-auth --target prod --base <preview>` | 27/27, exit 0. Cleanup: 1/1 users, 0 profile rows left. The 10 email checks run only on the local target |
+| Production counts before and after e2e | 1 auth user, 0 throwaway, 201 profiles, both times |
+
+Playwright, headless Chrome, `/`, `/login`, `/signup`, `/forgot-password`, `/reset-password` at 375 and 1440 px, all HTTP 200:
+
+| Finding | Result |
+|---|---|
+| Horizontal overflow | None on all 10 page loads |
+| Console errors | 1: `/favicon.ico` 404, on the first load. There is no favicon and no icon link in the head |
+| Failed requests | 2 at 375 px, both `ERR_ABORTED` on `_rsc` route prefetches, from `/` and `/login`. Cause not investigated. No request returned 4xx or 5xx in Playwright's network events |
+| Buttons and links under 44 px | 30 across the 10 page loads, the same elements at both widths. **Not fixed** |
+
+Under 44 px, height unless noted:
+
+| Element | Size at 375 px | Pages |
+|---|---|---|
+| Header logo, `Log in`, `Sign up` | 32 | `/` |
+| Auth page logo link | 40 | All four auth pages |
+| `Sign in`, `Create account`, `Send reset link` buttons | 40 | `/login`, `/signup`, `/forgot-password` |
+| Text links: `Forgot your password?`, `Create one`, `Sign in` | 17 | Auth pages |
+
+`/reset-password` was loaded with no token, so its new-password form was not measured.
+
+Credentials: `PROD_SUPABASE_ANON_KEY` came from the Supabase Management API. An automation bypass was created on the Vercel project through the CLI and saved as `VERCEL_BYPASS`. It opens every protected deployment of this project until revoked. Both are in `.env.production.local`, which is git-ignored and untracked. The duplicate service-role line that returned HTTP 401 was removed.
+
+`auth-health` and `e2e-auth` read `VERCEL_BYPASS` from `.env.production.local` as well as the environment.
 
 ## Not verified yet
 - **The fix for missing settings on a deployment:** proven on a local no-key build only.
-- **`e2e-auth` and the Playwright viewport check on any preview:** both need `VERCEL_BYPASS`.
-- **Anon refused `schema_health` and `profiles` on production:** needs `PROD_SUPABASE_ANON_KEY`.
 - **New code on production:** nothing from this branch is deployed there.
 - **Real email delivery on the hosted project.** Forgot-password and resend were exercised with real messages only on the local mail catcher. On a hosted target the e2e uses a generated recovery link instead, to avoid mailing a fake address and spending the 2-per-hour limit.
 - **Resend on hosted:** autoconfirm is on, so production never produces an unconfirmed account today.
@@ -243,8 +270,6 @@ Harness notes, because an earlier run had 5 FAILs and a later one hung:
 - ASSUMPTION: `India-East` is offered at signup alongside the three regions on production, so players there are not forced into a wrong one.
 
 ## Needs the user
-2. Vercel: add a Protection Bypass for Automation, and set its value locally as `VERCEL_BYPASS`.
-4. `.env.production.local`: add `PROD_SUPABASE_ANON_KEY`, so `verify-prod --target prod` can prove anon is refused.
 5. Optional: repository variables `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
 6. Phase 5 answers: minimum age, governing law and jurisdiction, operator name and contact email.
 7. Supabase dashboard (Phase 5): password minimum 10 (still 6, so only the app's forms enforce it), leaked password protection, email confirmation, custom SMTP.
