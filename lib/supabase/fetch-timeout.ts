@@ -55,8 +55,11 @@ export function fetchWithTimeout(ms: number): typeof fetch {
       else callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
     }
 
-    return fetch(input, { ...init, signal: controller.signal }).finally(() =>
-      clearTimeout(timer),
+    // no-store: Next.js 14 caches server-side fetches by default, and a cached
+    // Supabase answer is wrong in both directions -- stale data when the
+    // database is up, a false "ok" when it is down (seen on /api/health).
+    return fetch(input, { cache: 'no-store', ...init, signal: controller.signal }).finally(
+      () => clearTimeout(timer),
     );
   };
 }

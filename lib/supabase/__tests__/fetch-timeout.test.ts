@@ -41,6 +41,14 @@ describe('fetchWithTimeout', () => {
     await expect(fetchWithTimeout(4000)('https://supabase.test')).resolves.toBe(response);
   });
 
+  it('opts out of the Next.js fetch cache', async () => {
+    const spy = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('ok'));
+    vi.stubGlobal('fetch', spy);
+
+    await fetchWithTimeout(4000)('https://supabase.test');
+    expect(spy.mock.calls[0]![1]?.cache).toBe('no-store');
+  });
+
   it('still honours an abort from the caller', async () => {
     vi.stubGlobal('fetch', hangingFetch());
     const caller = new AbortController();
