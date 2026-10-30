@@ -23,14 +23,15 @@
  * environment (both public values) it also checks that the auth server answers
  * and that anon is refused the catalog and player tables.
  *
- * Reads credentials from the .env files. VERCEL_BYPASS, when set, is sent as
- * x-vercel-protection-bypass for protected preview deployments. Sends no email.
+ * Reads credentials from the .env files. VERCEL_BYPASS, from the environment or
+ * .env.production.local, is sent as x-vercel-protection-bypass for protected
+ * preview deployments. Sends no email.
  * Prints PASS/FAIL per check and no secret; exits non-zero on any failure.
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-import { credentialsFor, parseTarget, serviceClient } from './lib/env';
+import { credentialsFor, parseTarget, serviceClient, vercelBypass } from './lib/env';
 import { evaluateSchemaHealth, type SchemaHealth } from './lib/schema-health';
 
 const TIMEOUT_MS = 10_000;
@@ -40,8 +41,10 @@ function argValue(name: string): string | undefined {
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
-const bypassHeaders = (): Record<string, string> =>
-  process.env.VERCEL_BYPASS ? { 'x-vercel-protection-bypass': process.env.VERCEL_BYPASS } : {};
+const bypassHeaders = (): Record<string, string> => {
+  const bypass = vercelBypass();
+  return bypass ? { 'x-vercel-protection-bypass': bypass } : {};
+};
 
 /** The secret-free checks. Safe to run from a public repository's schedule. */
 async function anonChecks() {

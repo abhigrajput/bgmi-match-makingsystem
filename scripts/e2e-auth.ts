@@ -23,13 +23,13 @@
  * on any FAIL. No secret is printed.
  *
  * CHROME_PATH overrides the browser location (default: Chrome on Windows).
- * VERCEL_BYPASS, when set, is sent as `x-vercel-protection-bypass` so protected
- * preview deployments can be tested.
+ * VERCEL_BYPASS, from the environment or .env.production.local, is sent as
+ * `x-vercel-protection-bypass` so protected preview deployments can be tested.
  */
 
 import { chromium, type BrowserContext, type Page } from 'playwright-core';
 
-import { parseTarget, serviceClient } from './lib/env';
+import { parseTarget, serviceClient, vercelBypass } from './lib/env';
 
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const MAILPIT = 'http://127.0.0.1:54324';
@@ -126,10 +126,9 @@ async function main() {
   };
 
   const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+  const bypass = vercelBypass();
   const context = await browser.newContext({
-    extraHTTPHeaders: process.env.VERCEL_BYPASS
-      ? { 'x-vercel-protection-bypass': process.env.VERCEL_BYPASS }
-      : {},
+    extraHTTPHeaders: bypass ? { 'x-vercel-protection-bypass': bypass } : {},
   });
   const page = await context.newPage();
   const pathOf = (p: Page) => new URL(p.url()).pathname;
