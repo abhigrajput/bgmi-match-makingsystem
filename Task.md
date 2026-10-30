@@ -22,7 +22,7 @@ This file is longer than the two-screen target because the migration safety sect
 | Build without Supabase settings | Done locally | Reproduced 500s, then a no-key production build. See "Production check" |
 | Phases 3 to 6 | Not started | |
 
-Gates at 12269e2: `tsc --noEmit` exit 0; `vitest run` 134 passed in 10 files; `next lint` no warnings or errors; `scripts/e2e-auth.ts --target local` 37/37 (includes cleanup: 2/2 users deleted, 0 profile rows left).
+Gates at the latest commit: `tsc --noEmit` exit 0; `vitest run` 138 passed in 11 files; `next lint` no warnings or errors. `scripts/e2e-auth.ts --target local` at 12269e2, the last commit to change app code: 37/37 (includes cleanup: 2/2 users deleted, 0 profile rows left).
 
 Production, before this branch was deployed anywhere: `verify-prod` 15/15 and `e2e-auth` 11/11 against the old deployment on 2026-10-30 (test user deleted).
 
@@ -52,11 +52,16 @@ Build without `NEXT_PUBLIC_SUPABASE_ANON_KEY`, local production build, not a dep
 | `POST /auth/signout` | 500 | 303 `/` |
 | `/`, `/forgot-password`, `/reset-password`, `/accept-invite` | 200 | 200 |
 
-After the fix, submitting the login and forgot-password forms shows the service message, `/reset-password` shows it instead of the error screen, and the browser reported 0 page errors. A deployment with the key cannot exercise this path, so it remains proven on the local build only. `lib/api/auth.ts` now answers 503 for API routes in this state; that path has no test.
+After the fix, submitting the login and forgot-password forms shows the service message, `/reset-password` shows it instead of the error screen, and the browser reported 0 page errors. A deployment with the key cannot exercise this path, so it remains proven on the local build only. `lib/api/auth.ts` now answers 503 for API routes in this state, covered by `lib/api/__tests__/auth.test.ts`: with the guard removed, its two 503 tests fail.
 
 Found along the way:
 - Vercel functions run in `iad1`, the database in `ap-south-1`, so every query crosses that distance. Not measured.
 - The Vercel connector creates or reuses temporary share links on the previews it fetches (`qwn5shuaa`, `72mxkmync`, `in1zp0trc`). They expire in 23 hours and work for anyone with the URL.
+
+## Third production run (2026-10-30): blocked
+Reported as added, but not found: `VERCEL_BYPASS` and `PROD_SUPABASE_ANON_KEY` are in neither `.env.production.local` nor `.env.local`, nor in the process, user or machine environment, and `PROD_SUPABASE_SERVICE_ROLE_KEY` is still listed twice. So `verify-prod` is still 22/23 (201 profiles), and `auth-health`, `e2e-auth` and the Playwright check at 375 and 1440 px were not run on the newest preview. The newest preview when checked was `dpl_CGeu6Ak5RRnj2JmVtQvmQrPtGb7p`, built from 9e90752.
+
+`auth-health` and `e2e-auth` now also read `VERCEL_BYPASS` from `.env.production.local`. They read only the process environment before, so a value in that file would have been ignored. Not yet exercised with a real value.
 
 ## Not verified yet
 - **The fix for missing settings on a deployment:** proven on a local no-key build only.
