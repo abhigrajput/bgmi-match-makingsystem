@@ -132,7 +132,7 @@ export default async function PlayersPage() {
                   <TD>
                     <Link
                       href={`/players/${profile.id}`}
-                      className="flex items-center gap-2.5 font-medium text-fg hover:text-data"
+                      className="flex min-h-11 items-center gap-2.5 font-medium text-fg hover:text-data"
                     >
                       <Avatar name={profile.display_name} src={profile.avatar_url} size="sm" />
                       {profile.display_name}

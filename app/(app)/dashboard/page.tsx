@@ -147,7 +147,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Upcoming tournaments</CardTitle>
-            <Link href="/tournaments" className="text-xs font-medium text-data hover:underline">
+            <Link href="/tournaments" className="inline-flex min-h-11 min-w-11 items-center text-xs font-medium text-data hover:underline">
               All
             </Link>
           </CardHeader>
@@ -176,7 +176,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>My recent matches</CardTitle>
-            <Link href="/matches" className="text-xs font-medium text-data hover:underline">
+            <Link href="/matches" className="inline-flex min-h-11 min-w-11 items-center text-xs font-medium text-data hover:underline">
               All
             </Link>
           </CardHeader>
@@ -214,7 +214,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
-            <Link href="/profile" className="text-xs font-medium text-data hover:underline">
+            <Link href="/profile" className="inline-flex min-h-11 min-w-11 items-center text-xs font-medium text-data hover:underline">
               Edit
             </Link>
           </CardHeader>
@@ -225,7 +225,7 @@ export default async function DashboardPage() {
               <Row
                 label="Public page"
                 value={
-                  <Link href={`/players/${profile.id}`} className="text-data hover:underline">
+                  <Link href={`/players/${profile.id}`} className="inline-flex min-h-11 min-w-11 items-center text-data hover:underline">
                     View
                   </Link>
                 }
@@ -237,7 +237,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Preferences</CardTitle>
-            <Link href="/profile" className="text-xs font-medium text-data hover:underline">
+            <Link href="/profile" className="inline-flex min-h-11 min-w-11 items-center text-xs font-medium text-data hover:underline">
               {preferences ? 'Edit' : 'Set up'}
             </Link>
           </CardHeader>
@@ -280,7 +280,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Availability</CardTitle>
-            <Link href="/profile/availability" className="text-xs font-medium text-data hover:underline">
+            <Link href="/profile/availability" className="inline-flex min-h-11 min-w-11 items-center text-xs font-medium text-data hover:underline">
               {availability.length > 0 ? 'Edit' : 'Add'}
             </Link>
           </CardHeader>

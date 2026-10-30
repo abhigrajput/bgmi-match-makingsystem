@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 
 import { AcceptInvite } from '../accept-invite/accept-invite';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Choose a new password',
-};
+export const metadata: Metadata = pageMetadata({
+  title: 'Choose a new password · SquadSync',
+  description:
+    'Choose a new SquadSync password from the link in your reset email.',
+  path: '/reset-password',
+});
 
 /**
  * Where a password-reset email lands. The session is in the URL fragment, which

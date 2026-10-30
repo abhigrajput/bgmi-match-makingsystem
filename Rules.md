@@ -10,7 +10,7 @@ Working rules for this repo. Source: the launch-hardening master prompt (2026-10
 ## Data and schema
 4. New migrations only (0007 onward). Never edit an applied migration.
 5. No deleting or renaming production fields without a written migration plan.
-6. Production DB is never reached by CLI, psql or pooler. Apply locally, user pastes into SQL Editor, verify through REST.
+6. Production DB is never reached by CLI, psql or pooler. Apply locally first with rollback SQL in Task.md, then the user pastes into the SQL Editor, or the agent uses the Management API when the user has said so for that migration. Verify through REST.
 
 ## Change discipline
 7. Diagnose before changing. Findings go into Task.md first.
@@ -28,4 +28,7 @@ Working rules for this repo. Source: the launch-hardening master prompt (2026-10
 17. Every network call to Supabase from middleware or server rendering has a timeout.
 
 ## Git
-18. One concern per commit. Branch per piece of work; PRs into `main`; never merge without the user.
+18. One concern per commit. Branch per piece of work; merge to `main` only when the user has authorised that merge, then verify production and revert the merge if it fails.
+
+## Processes
+19. Never kill a process by port owner. Verify image name and command line first. No `taskkill /T` on an unverified PID. Never PID 0, PID 4, or anything that is not this project's own process.

@@ -81,6 +81,21 @@ export function createEmailLinkClient() {
   });
 }
 
+/**
+ * A cookie-less client that always runs as anon: the same policies for every
+ * visitor, signed in or not, and no cookie read to make the caller dynamic.
+ */
+export function createAnonClient() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+  }
+
+  return createSupabaseClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: fetchWithTimeout(SERVER_FETCH_TIMEOUT_MS) },
+  });
+}
+
 export function createClient() {
   /**
    * Read before the configuration check, and the order matters.
@@ -141,4 +156,24 @@ export function createClient() {
       },
     },
   });
+}
+
+/**
+ * Whether the request carries a valid session, for public pages choosing which
+ * buttons to show.
+ *
+ * getUser(), not getSession(), for the same reason as the login page: only
+ * getUser() revalidates the cookie against the auth server. Any failure counts
+ * as signed out: a public page should still render.
+ */
+export async function isSignedIn(): Promise<boolean> {
+  if (isSupabaseUnreachable()) return false;
+  try {
+    const {
+      data: { user },
+    } = await createClient().auth.getUser();
+    return user !== null;
+  } catch {
+    return false;
+  }
 }

@@ -100,7 +100,7 @@ export function SignupForm() {
           className={fieldClass}
         />
         <p id="bgmi_ign-hint" className="mt-1 text-xs text-muted">
-          Must match your name in BGMI exactly — it is how your matches are
+          Must match your name in BGMI exactly: it is how your matches are
           linked to this account. Must be unique.
         </p>
         <FieldError id="bgmi_ign-error" messages={state.fieldErrors?.bgmi_ign} />

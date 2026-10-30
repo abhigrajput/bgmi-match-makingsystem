@@ -100,7 +100,7 @@ async function main() {
     };
 
     const landing = await fetch(`${BASE}/`).then((r) => r.text());
-    step('Landing loads with live stats', landing.includes('Squads formed'));
+    step('Landing loads', landing.includes('How it works'));
 
     const dash = await page('/dashboard');
     step('Dashboard', dash.status === 200 && dash.text.includes('Welcome back'), `status ${dash.status}`);

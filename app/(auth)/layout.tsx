@@ -1,7 +1,9 @@
-import Link from 'next/link';
-import { Crosshair } from 'lucide-react';
+import type { Metadata } from 'next';
 
-import { APP_NAME, APP_TAGLINE } from '@/lib/site';
+import { Wordmark } from '@/components/shell/wordmark';
+import { NO_INDEX } from '@/lib/seo';
+
+export const metadata: Metadata = { robots: NO_INDEX };
 
 /**
  * Shell for the login and signup pages.
@@ -28,15 +30,7 @@ export default function AuthLayout({
         className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[40rem] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,rgb(var(--accent)/0.14),transparent_65%)]"
       />
       <div className="relative w-full max-w-sm">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-input bg-accent text-accent-fg">
-            <Crosshair aria-hidden="true" className="h-4 w-4" />
-          </span>
-          <span className="leading-tight">
-            <span className="block text-base font-semibold text-fg">{APP_NAME}</span>
-            <span className="block text-xs text-muted">{APP_TAGLINE}</span>
-          </span>
-        </Link>
+        <Wordmark tagline className="mb-8 flex justify-center" />
         <div className="rounded-card border border-border bg-surface p-6">
           {children}
         </div>

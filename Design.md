@@ -1,6 +1,6 @@
 # Design
 
-First draft from `tailwind.config.ts` and `app/globals.css`. The hard bans and the lint script are Phase 3 and are not written yet.
+From `tailwind.config.ts` and `app/globals.css`. `scripts/check-design.mjs` enforces the bans below and runs in CI.
 
 ## Tokens (as built)
 Defined as RGB channels in `app/globals.css`, exposed through `tailwind.config.ts`. Dark is the default; a light set overrides them.
@@ -26,6 +26,17 @@ ASSUMPTION: the role colour `role-igl` (violet, 167 139 250) is a categorical da
 
 ## Components
 Primitives in `components/ui/`: Button, Card, Dialog, Input, Label, Select, Slider, Table, Badge, RoleBadge, StatusBadge. Form helpers in `components/form/` (Banner, FieldError, SubmitButton). Route states in `components/shell/` (loading, error, empty panels). Every signed-in route has `loading.tsx` and `error.tsx`.
+
+## Hard bans
+`rounded-full` on buttons and inputs, purple or violet gradients, emoji as icons, em dashes in user-facing text, the phrases revolutionize, seamlessly, leverage, cutting-edge, game-changer, unleash and supercharge, placeholder text, "Made with" tags, fake metrics or counters, testimonials, cursor animation, parallax.
+
+Public pages do not show `public_stats()`: it counts seeded demo rows.
+
+## Tap targets and layout
+Every link, button and field is at least 44 px (`h-11`, `min-h-11`, `min-w-11`). A checkbox's target includes its label. No horizontal scroll at 320, 375, 414, 768, 1024 or 1440 px. `scripts/check-ui.ts` measures all of this.
+
+## Public shell
+`PublicShell` is header, main and footer for public pages. `Wordmark` is the only logo and always links home. On phones the header links move into the native `<dialog>` in `components/ui/dialog.tsx`, which traps focus, closes on Escape and returns focus to the menu button.
 
 ## Auth form messages
 - Field-specific problems render under the field (`FieldError`).

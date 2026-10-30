@@ -88,7 +88,7 @@ export default async function LeaderboardPage({
         description="Top 100 players by overall rating. Ratings are computed from match history, not entered."
       />
 
-      <form method="get" className="mb-6 grid gap-3 rounded-card border border-border bg-surface p-4 sm:grid-cols-[1fr_12rem_12rem_auto]">
+      <form method="get" className="mb-6 grid gap-3 rounded-card border border-border bg-surface p-4 sm:grid-cols-2 xl:grid-cols-[1fr_12rem_12rem_auto]">
         <div className="relative">
           <label htmlFor="q" className="sr-only">
             Search by in-game name
@@ -127,7 +127,7 @@ export default async function LeaderboardPage({
             Apply
           </Button>
           {filtered ? (
-            <Link href="/leaderboard" className="self-center text-sm text-data hover:underline">
+            <Link href="/leaderboard" className="inline-flex min-h-11 min-w-11 items-center self-center text-sm text-data hover:underline">
               Clear
             </Link>
           ) : null}
@@ -169,7 +169,7 @@ export default async function LeaderboardPage({
                   )}
                 </TD>
                 <TD>
-                  <Link href={`/players/${row.profile_id}`} className="flex items-center gap-2.5 hover:text-data">
+                  <Link href={`/players/${row.profile_id}`} className="flex min-h-11 items-center gap-2.5 hover:text-data">
                     <Avatar name={row.display_name} size="sm" />
                     <span>
                       <span className="block font-mono text-sm text-fg">{row.bgmi_ign}</span>

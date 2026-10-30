@@ -271,7 +271,7 @@ export function AvailabilityEditor({
 
           <p className="text-xs text-muted">
             Times are local to the timezone you pick. A window that crosses
-            midnight is added as two windows — one ending at 24:00 and one
+            midnight is added as two windows: one ending at 24:00 and one
             starting at 00:00 the next day.
           </p>
 

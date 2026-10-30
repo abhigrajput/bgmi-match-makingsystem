@@ -7,51 +7,35 @@
  * forward instead of two forms that would just redirect them.
  */
 
-import Link from 'next/link';
 import {
   BarChart3,
   Brain,
   CalendarClock,
-  Crosshair,
   Lock,
   MessageSquareQuote,
   Sparkles,
   Swords,
   Trophy,
   UserPlus,
-  Users,
 } from 'lucide-react';
 
+import { PublicShell } from '@/components/shell/public-shell';
 import { ButtonLink } from '@/components/ui/button';
-import { loadPublicStats } from '@/lib/public-stats';
+import { pageMetadata } from '@/lib/seo';
 import { APP_NAME } from '@/lib/site';
-import { createClient, isSupabaseUnreachable } from '@/lib/supabase/server';
+import { isSignedIn } from '@/lib/supabase/server';
 
-// The try/catch below would also swallow the signal cookies() throws to mark a
+// The try/catch in isSignedIn() would also swallow the signal cookies() throws to mark a
 // route dynamic, and Next would prerender this page once as signed out. Opting
 // out of static rendering explicitly keeps the button per-request.
 export const dynamic = 'force-dynamic';
 
-/**
- * Whether the request carries a valid session.
- *
- * getUser(), not getSession(), for the same reason as the login page: only
- * getUser() revalidates the cookie against the auth server. createClient()
- * throws when Supabase is not configured; the landing page should still render
- * in that state, so it is treated as signed out rather than surfaced as a 500.
- */
-async function isSignedIn(): Promise<boolean> {
-  if (isSupabaseUnreachable()) return false;
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user !== null;
-  } catch {
-    return false;
-  }
-}
+export const metadata = pageMetadata({
+  title: 'SquadSync: AI squad matchmaking for BGMI',
+  description:
+    'SquadSync forms BGMI tournament squads from skill, role coverage, comms, language and shared hours, and explains why each squad was put together.',
+  path: '/',
+});
 
 const STEPS = [
   {
@@ -109,44 +93,11 @@ const FEATURES = [
   },
 ];
 
-const TEAM = ['Abhishek GR', 'Shivakumar SH', 'Aishwarya YH', 'Aniketana SD'];
-
 export default async function HomePage() {
-  // When middleware already waited on Supabase and got nothing, the stats strip
-  // is skipped (it hides on null) rather than waiting a second time.
-  const [signedIn, stats] = await Promise.all([
-    isSignedIn(),
-    isSupabaseUnreachable() ? null : loadPublicStats(),
-  ]);
+  const signedIn = await isSignedIn();
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 md:px-8">
-        <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-input bg-accent text-accent-fg">
-            <Crosshair aria-hidden="true" className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-fg">{APP_NAME}</span>
-        </Link>
-        <nav aria-label="Account" className="flex gap-2">
-          {signedIn ? (
-            <ButtonLink href="/dashboard" size="sm">
-              Go to dashboard
-            </ButtonLink>
-          ) : (
-            <>
-              <ButtonLink href="/login" variant="ghost" size="sm">
-                Log in
-              </ButtonLink>
-              <ButtonLink href="/signup" size="sm">
-                Sign up
-              </ButtonLink>
-            </>
-          )}
-        </nav>
-      </header>
-
-      <main>
+    <PublicShell signedIn={signedIn}>
         <section className="relative overflow-hidden">
           <div
             aria-hidden="true"
@@ -182,29 +133,6 @@ export default async function HomePage() {
               )}
             </div>
 
-            {/*
-              Hidden entirely when the counts cannot be read. Printing zeros on
-              a failed query would state something false about the product.
-            */}
-            {stats ? (
-              <dl className="mt-12 grid max-w-2xl grid-cols-3 divide-x divide-border rounded-card border border-border bg-surface">
-                {[
-                  { label: 'Players', value: stats.players, icon: Users },
-                  { label: 'Tournaments', value: stats.tournaments, icon: Trophy },
-                  { label: 'Squads formed', value: stats.squads_formed, icon: Swords },
-                ].map((item) => (
-                  <div key={item.label} className="px-4 py-4 md:px-6">
-                    <dt className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted">
-                      <item.icon aria-hidden="true" className="h-3.5 w-3.5" />
-                      {item.label}
-                    </dt>
-                    <dd className="mt-1 font-mono text-2xl font-semibold tabular text-fg md:text-3xl">
-                      {item.value.toLocaleString('en-IN')}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            ) : null}
           </div>
         </section>
 
@@ -294,21 +222,6 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-      </main>
-
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 text-sm md:flex-row md:justify-between md:px-8">
-          <div>
-            <p className="font-medium text-fg">Team</p>
-            <p className="mt-1 text-muted">{TEAM.join(' · ')}</p>
-            <p className="mt-1 text-muted">Guide: Dr. Vishwanath K</p>
-            <p className="mt-1 text-muted">KLE Institute of Technology, Hubballi</p>
-          </div>
-          <p className="self-end text-xs text-muted">
-            Academic prototype. Not affiliated with Krafton or BGMI.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </PublicShell>
   );
 }

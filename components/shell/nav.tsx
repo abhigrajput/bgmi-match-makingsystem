@@ -54,7 +54,7 @@ export function Sidebar({
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-surface md:flex">
       <Link
-        href="/dashboard"
+        href="/"
         className="flex h-16 items-center gap-2.5 border-b border-border px-5"
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-input bg-accent text-accent-fg">
@@ -78,7 +78,7 @@ export function Sidebar({
               href={item.href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-3 rounded-input px-3 py-2 text-sm transition-colors duration-150',
+                'flex min-h-11 items-center gap-3 rounded-input px-3 text-sm transition-colors duration-150',
                 active
                   ? 'bg-accent/10 font-medium text-accent'
                   : 'text-muted hover:bg-surface-2 hover:text-fg',
@@ -106,7 +106,7 @@ export function Sidebar({
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="mt-1 flex w-full items-center gap-3 rounded-input px-3 py-2 text-sm text-muted transition-colors duration-150 hover:bg-surface-2 hover:text-fg"
+            className="mt-1 flex min-h-11 w-full items-center gap-3 rounded-input px-3 text-sm text-muted transition-colors duration-150 hover:bg-surface-2 hover:text-fg"
           >
             <LogOut aria-hidden="true" className="h-4 w-4" />
             Sign out
@@ -120,7 +120,7 @@ export function Sidebar({
 export function MobileTopBar({ displayName }: { displayName: string }) {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur md:hidden">
-      <Link href="/dashboard" className="flex items-center gap-2">
+      <Link href="/" className="flex min-h-11 items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-input bg-accent text-accent-fg">
           <Crosshair aria-hidden="true" className="h-3.5 w-3.5" />
         </span>
@@ -131,7 +131,7 @@ export function MobileTopBar({ displayName }: { displayName: string }) {
         <button
           type="submit"
           aria-label="Sign out"
-          className="rounded-input p-2 text-muted hover:bg-surface-2 hover:text-fg"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-input text-muted hover:bg-surface-2 hover:text-fg"
         >
           <LogOut aria-hidden="true" className="h-4 w-4" />
         </button>
@@ -162,7 +162,7 @@ export function MobileTabBar() {
             href={item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[10px]',
+              'flex min-h-[56px] min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-0.5 text-[10px]',
               active ? 'text-accent' : 'text-muted',
             )}
           >

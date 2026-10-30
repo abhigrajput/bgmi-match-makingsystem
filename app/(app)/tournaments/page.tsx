@@ -103,7 +103,7 @@ export default async function TournamentsPage({
               href={f.value === 'all' ? '/tournaments' : `/tournaments?status=${f.value}`}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'rounded-full border px-3 py-1 text-sm transition-colors duration-150',
+                'inline-flex min-h-11 min-w-11 items-center justify-center rounded-input border px-3 text-sm transition-colors duration-150',
                 active
                   ? 'border-accent/50 bg-accent/10 text-accent'
                   : 'border-border text-muted hover:border-border-strong hover:text-fg',
@@ -126,7 +126,7 @@ export default async function TournamentsPage({
           }
           action={
             filter === 'all' ? undefined : (
-              <Link href="/tournaments" className="text-sm font-medium text-data hover:underline">
+              <Link href="/tournaments" className="inline-flex min-h-11 min-w-11 items-center text-sm font-medium text-data hover:underline">
                 Show all tournaments
               </Link>
             )

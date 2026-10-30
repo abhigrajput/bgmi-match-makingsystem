@@ -2,10 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { ForgotForm } from './forgot-form';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Reset your password',
-};
+export const metadata: Metadata = pageMetadata({
+  title: 'Reset your password · SquadSync',
+  description:
+    'Enter your account email and SquadSync will send a link to choose a new password.',
+  path: '/forgot-password',
+});
 
 export default function ForgotPasswordPage() {
   return (
@@ -19,7 +23,7 @@ export default function ForgotPasswordPage() {
 
       <p className="mt-6 text-sm text-muted">
         Remembered it?{' '}
-        <Link href="/login" className="font-medium text-data hover:underline">
+        <Link href="/login" className="inline-flex min-h-11 min-w-11 items-center font-medium text-data hover:underline">
           Sign in
         </Link>
         .

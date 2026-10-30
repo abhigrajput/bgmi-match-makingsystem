@@ -32,3 +32,9 @@ Site URL is the production URL; redirect list is `https://bgmi-match-makingsyste
 
 ## Known operational risk
 Free-tier projects auto-pause when idle. A paused project's hostname returns NXDOMAIN. This happened on 2026-10-30 and caused the login failures (Task.md, Phase 1).
+
+## Contact form and rate limits (0009)
+`/contact` is a server action running as anon. `contact_messages`: anon and authenticated insert, organiser read, no update or delete, 200 an hour across all senders in the insert policy. `lib/rate-limit.ts` counts per IP through `rate_limit_hit()`, in Postgres because serverless instances share no memory, and stores only a hash of the IP. It fails open when the counter cannot be reached.
+
+## SEO
+`metadataBase` is `siteUrl()`. `lib/seo.ts` builds each public page's tags. Auth and signed-in layouts are noindex; `next.config.mjs` sends `X-Robots-Tag` for `/api` and `/auth`. The social card is a static PNG from `scripts/generate-icons.mjs`.

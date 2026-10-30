@@ -714,6 +714,18 @@ export interface Database {
         Update: MatchFeedbackUpdate;
         Relationships: [];
       };
+      contact_messages: {
+        Row: { id: string; name: string; email: string; message: string; created_at: string };
+        Insert: { name: string; email: string; message: string };
+        Update: never;
+        Relationships: [];
+      };
+      rate_limits: {
+        Row: { key: string; hits: number; window_started: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       tournaments: {
         Row: Tournament;
         Insert: TournamentInsert;
@@ -740,6 +752,10 @@ export interface Database {
       };
     };
     Functions: {
+      rate_limit_hit: {
+        Args: { p_key: string; p_max: number; p_window_seconds: number };
+        Returns: boolean;
+      };
       public_stats: {
         Args: Record<string, never>;
         Returns: { players: number; tournaments: number; squads_formed: number }[];

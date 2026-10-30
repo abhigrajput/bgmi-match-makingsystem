@@ -50,7 +50,7 @@ export default async function AvailabilityPage() {
     <div>
       <Link
         href="/profile"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg"
+        className="mb-4 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-fg"
       >
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
         Back to profile

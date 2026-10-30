@@ -81,7 +81,7 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
 
   return (
     <div className="space-y-6">
-      <Link href="/matches" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg">
+      <Link href="/matches" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
         All matches
       </Link>
