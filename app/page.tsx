@@ -25,7 +25,7 @@ import {
 import { ButtonLink } from '@/components/ui/button';
 import { loadPublicStats } from '@/lib/public-stats';
 import { APP_NAME } from '@/lib/site';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, isSupabaseUnreachable } from '@/lib/supabase/server';
 
 // The try/catch below would also swallow the signal cookies() throws to mark a
 // route dynamic, and Next would prerender this page once as signed out. Opting
@@ -41,6 +41,7 @@ export const dynamic = 'force-dynamic';
  * in that state, so it is treated as signed out rather than surfaced as a 500.
  */
 async function isSignedIn(): Promise<boolean> {
+  if (isSupabaseUnreachable()) return false;
   try {
     const supabase = createClient();
     const {
@@ -111,7 +112,12 @@ const FEATURES = [
 const TEAM = ['Abhishek GR', 'Shivakumar SH', 'Aishwarya YH', 'Aniketana SD'];
 
 export default async function HomePage() {
-  const [signedIn, stats] = await Promise.all([isSignedIn(), loadPublicStats()]);
+  // When middleware already waited on Supabase and got nothing, the stats strip
+  // is skipped (it hides on null) rather than waiting a second time.
+  const [signedIn, stats] = await Promise.all([
+    isSignedIn(),
+    isSupabaseUnreachable() ? null : loadPublicStats(),
+  ]);
 
   return (
     <div className="min-h-screen bg-bg">

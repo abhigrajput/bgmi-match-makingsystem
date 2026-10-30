@@ -15,6 +15,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+import { fetchWithTimeout, PUBLIC_STATS_TIMEOUT_MS } from '@/lib/supabase/fetch-timeout';
 import type { Database } from '@/types/database';
 
 export type PublicStats = {
@@ -37,6 +38,8 @@ export async function loadPublicStats(): Promise<PublicStats | null> {
   try {
     const supabase = createClient<Database>(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
+      // The strip is optional; a slow database must not slow the landing page.
+      global: { fetch: fetchWithTimeout(PUBLIC_STATS_TIMEOUT_MS) },
     });
     const { data, error } = await supabase.rpc('public_stats');
     if (error || !data) return null;

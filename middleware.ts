@@ -1,5 +1,10 @@
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
+import {
+  MIDDLEWARE_PROTECTED_TIMEOUT_MS,
+  MIDDLEWARE_PUBLIC_TIMEOUT_MS,
+  SUPABASE_UNREACHABLE_HEADER,
+} from '@/lib/supabase/fetch-timeout';
 import { redirectWithSession, updateSession } from '@/lib/supabase/middleware';
 
 /**
@@ -49,10 +54,61 @@ function isProtected(pathname: string): boolean {
   );
 }
 
-export async function middleware(request: NextRequest) {
-  const session = await updateSession(request);
+/**
+ * Whether the request carries a Supabase session cookie at all.
+ *
+ * @supabase/ssr stores the session as `sb-<project-ref>-auth-token`, split into
+ * `.0`, `.1` chunks when large. No cookie means nothing to refresh and nobody to
+ * verify, so there is no reason to call Supabase.
+ */
+function hasAuthCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some(({ name }) => name.startsWith('sb-') && name.includes('-auth-token'));
+}
 
-  if (!session.user && isProtected(request.nextUrl.pathname)) {
+export async function middleware(request: NextRequest) {
+  const isProtectedRoute = isProtected(request.nextUrl.pathname);
+
+  /**
+   * No session cookie: decided without a network call. Public pages render;
+   * protected ones go to /login. This is every anonymous visitor, so a
+   * Supabase outage cannot slow down the public site for them at all.
+   *
+   * Signed-in visitors to public pages are still refreshed below. Skipping
+   * them would leave the refresh to the page's server component, which cannot
+   * write cookies: the rotated refresh token would be lost and the next use of
+   * the old one rejected as reuse, signing the user out. (Task.md, decisions.)
+   */
+  if (!hasAuthCookie(request)) {
+    if (isProtectedRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  const session = await updateSession(
+    request,
+    isProtectedRoute ? MIDDLEWARE_PROTECTED_TIMEOUT_MS : MIDDLEWARE_PUBLIC_TIMEOUT_MS,
+  );
+
+  if (session.unavailable) {
+    if (isProtectedRoute) {
+      // Not "you are signed out": the session may be perfectly valid. The
+      // login page shows a service message for this flag.
+      return redirectWithSession(request, '/login', session, '?error=service');
+    }
+
+    // Fail open. Tell the page so it does not wait on Supabase a second time.
+    const headers = new Headers(request.headers);
+    headers.set(SUPABASE_UNREACHABLE_HEADER, '1');
+    return NextResponse.next({ request: { headers } });
+  }
+
+  if (!session.user && isProtectedRoute) {
     // Through redirectWithSession, never NextResponse.redirect directly: a
     // bare redirect carries none of the cookies the refresh above just wrote,
     // which produces a sign-in loop rather than an error.
@@ -68,9 +124,9 @@ export const config = {
   /**
    * Runs on everything except static assets and image files.
    *
-   * The exclusions are for cost, not correctness: every matched request makes a
-   * getUser() call to the Supabase auth server, and there is no session to
-   * refresh on a favicon.
+   * The exclusions are for cost, not correctness: a matched request carrying a
+   * session cookie makes a getUser() call to the Supabase auth server, and
+   * there is no session to refresh on a favicon.
    *
    * Written as a negative lookahead over all paths rather than a positive list
    * of protected ones, because the session refresh has to happen on every page
@@ -79,9 +135,11 @@ export const config = {
    * pages, and they would find themselves signed out on arrival.
    *
    * `_next/static` and `_next/image` are Next's own asset routes. The file
-   * extension list catches everything served out of public/.
+   * extension list catches everything served out of public/. robots.txt,
+   * sitemap.xml and the web manifest are crawler and browser fetches that never
+   * carry a session worth refreshing.
    */
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|woff|woff2|ttf)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|woff|woff2|ttf)$).*)',
   ],
 };

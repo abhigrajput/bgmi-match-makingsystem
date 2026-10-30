@@ -19,10 +19,24 @@
  * out of static rendering. For an authenticated app that is what you want.
  */
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
+import {
+  fetchWithTimeout,
+  SERVER_FETCH_TIMEOUT_MS,
+  SUPABASE_UNREACHABLE_HEADER,
+} from '@/lib/supabase/fetch-timeout';
 import type { Database } from '@/types/database';
+
+/**
+ * True when middleware already tried Supabase for this request and got no
+ * answer. Public pages check it to render signed out straight away instead of
+ * spending their own timeout on the same outage.
+ */
+export function isSupabaseUnreachable(): boolean {
+  return headers().get(SUPABASE_UNREACHABLE_HEADER) === '1';
+}
 
 // Read as complete literal expressions -- see the note in client.ts. On the
 // server these are ordinary environment reads, but keeping the two files
@@ -61,6 +75,9 @@ export function createClient() {
   }
 
   return createServerClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    // An unresponsive Supabase must not hold a render or action until Vercel
+    // kills it. See lib/supabase/fetch-timeout.ts.
+    global: { fetch: fetchWithTimeout(SERVER_FETCH_TIMEOUT_MS) },
     cookies: {
       getAll() {
         return cookieStore.getAll();

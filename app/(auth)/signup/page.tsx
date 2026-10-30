@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, isSupabaseUnreachable } from '@/lib/supabase/server';
 
 import { SignupForm } from './signup-form';
 
@@ -11,16 +11,19 @@ export const metadata: Metadata = {
 };
 
 export default async function SignupPage() {
-  const supabase = createClient();
-
   // Same reasoning as the login page: a signed-in user on a signup form can
-  // only create a second account, which is not what they meant to do.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // only create a second account, which is not what they meant to do. Skipped
+  // when middleware already found Supabase unreachable.
+  if (!isSupabaseUnreachable()) {
+    const supabase = createClient();
 
-  if (user) {
-    redirect('/dashboard');
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      redirect('/dashboard');
+    }
   }
 
   return (
