@@ -57,7 +57,8 @@ export function DistributionBars({ data, unit, xLabel }: { data: Datum[]; unit: 
         </ResponsiveContainer>
       </div>
       <figcaption className="mt-1 text-center text-xs text-muted">{xLabel}</figcaption>
-      <table className="sr-only">
+      <div className="sr-only">
+      <table>
         <caption>{xLabel}</caption>
         <tbody>
           {data.map((d) => (
@@ -68,6 +69,7 @@ export function DistributionBars({ data, unit, xLabel }: { data: Datum[]; unit: 
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   );
 }
@@ -75,7 +77,7 @@ export function DistributionBars({ data, unit, xLabel }: { data: Datum[]; unit: 
 export function RoleDonut({ data }: { data: { role: PlayerRole; count: number }[] }) {
   const total = data.reduce((s, d) => s + d.count, 0);
   return (
-    <div className="flex flex-col items-center gap-6 sm:flex-row">
+    <div className="flex flex-col items-center gap-6 xl:flex-row">
       <div className="h-48 w-48 shrink-0" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

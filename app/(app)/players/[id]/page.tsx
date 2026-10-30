@@ -100,7 +100,7 @@ export default async function PlayerProfilePage({ params }: Params) {
     <div className="space-y-6">
       <Link
         href="/players"
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg"
+        className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-fg"
       >
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
         All players

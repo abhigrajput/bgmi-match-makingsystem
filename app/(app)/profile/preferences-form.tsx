@@ -282,7 +282,7 @@ export function PreferencesForm({
           defaultChecked={preferences?.wants_ranked ?? false}
           className="h-4 w-4 rounded border-border accent-[rgb(var(--accent))]"
         />
-        <label htmlFor="wants_ranked" className="text-sm">
+        <label htmlFor="wants_ranked" className="inline-flex min-h-11 items-center text-sm">
           I want ranked matches
         </label>
       </div>

@@ -62,7 +62,7 @@ export function FeedbackForm({
         <legend className="mb-1.5 text-sm font-medium text-fg">How was playing with {rateeIgn}?</legend>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((value) => (
-            <label key={value} className="cursor-pointer">
+            <label key={value} className="relative inline-flex h-11 w-11 cursor-pointer items-center justify-center">
               <input
                 type="radio"
                 name="rating"
@@ -101,7 +101,7 @@ export function FeedbackForm({
           defaultChecked
           className="h-4 w-4 rounded border-border accent-[rgb(var(--accent))]"
         />
-        <label htmlFor={`${id}-again`} className="text-sm text-fg">
+        <label htmlFor={`${id}-again`} className="inline-flex min-h-11 items-center text-sm text-fg">
           I would play with {rateeIgn} again
         </label>
       </div>

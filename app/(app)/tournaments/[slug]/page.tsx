@@ -93,7 +93,7 @@ export default async function TournamentPage({ params }: Params) {
 
   return (
     <div className="space-y-6">
-      <Link href="/tournaments" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg">
+      <Link href="/tournaments" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
         All tournaments
       </Link>

@@ -14,13 +14,13 @@ describe('pageMetadata', () => {
       title: 'A title',
       description: 'A description',
       url: '/contact',
-      images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
+      images: [{ url: '/og-image.png', width: 1200, height: 630 }],
     });
     expect(metadata.twitter).toMatchObject({
       card: 'summary_large_image',
       title: 'A title',
       description: 'A description',
-      images: ['/opengraph-image'],
+      images: ['/og-image.png'],
     });
   });
 

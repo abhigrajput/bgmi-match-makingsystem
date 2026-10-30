@@ -72,7 +72,7 @@ export function CompletenessCard({
                 {step.done ? (
                   <span className="text-muted">{step.label}</span>
                 ) : (
-                  <Link href={step.href} className="font-medium text-fg underline decoration-warning/60 underline-offset-4 hover:decoration-warning">
+                  <Link href={step.href} className="inline-flex min-h-11 items-center font-medium text-fg underline decoration-warning/60 underline-offset-4 hover:decoration-warning">
                     {step.label}
                   </Link>
                 )}

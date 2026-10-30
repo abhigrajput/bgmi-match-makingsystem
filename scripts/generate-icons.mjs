@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * scripts/generate-icons.mjs -- draws the favicon set from one SVG.
+ * scripts/generate-icons.mjs -- draws the favicon set and the social card.
  *
  *   node scripts/generate-icons.mjs
  *
@@ -25,6 +25,12 @@ const svg = (size) => `<!doctype html><html><body style="margin:0;background:tra
     <line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
   </g>
 </svg></body></html>`;
+
+const socialCard = `<!doctype html><html><body style="margin:0">
+<div style="box-sizing:border-box;width:1200px;height:630px;padding:80px;display:flex;flex-direction:column;justify-content:center;background:#0B0D12;font-family:'Segoe UI',system-ui,sans-serif">
+  <div style="font-size:88px;font-weight:700;color:#F5A524">SquadSync</div>
+  <div style="margin-top:24px;font-size:44px;color:#E7E9EE">AI squad matchmaking for BGMI</div>
+</div></body></html>`;
 
 /** ICO container around PNG frames. */
 function ico(frames) {
@@ -65,7 +71,11 @@ try {
   fs.writeFileSync('app/apple-icon.png', await render(180));
   fs.writeFileSync('public/icon-192.png', await render(192));
   fs.writeFileSync('public/icon-512.png', await render(512));
-  console.log('app/favicon.ico, app/icon.png, app/apple-icon.png, public/icon-192.png, public/icon-512.png');
+  const card = await browser.newPage({ viewport: { width: 1200, height: 630 } });
+  await card.setContent(socialCard);
+  await card.screenshot({ path: 'public/og-image.png' });
+  await card.close();
+  console.log('app/favicon.ico, app/icon.png, app/apple-icon.png, public/icon-192.png, public/icon-512.png, public/og-image.png');
 } finally {
   await browser.close();
 }

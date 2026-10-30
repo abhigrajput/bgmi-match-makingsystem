@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import { APP_NAME } from '@/lib/site';
 
-const OG_IMAGE = { url: '/opengraph-image', width: 1200, height: 630, alt: `${APP_NAME} social card` };
+const OG_IMAGE = { url: '/og-image.png', width: 1200, height: 630, alt: `${APP_NAME} social card` };
 
 /**
  * Title, description, canonical, Open Graph and Twitter tags for one page.

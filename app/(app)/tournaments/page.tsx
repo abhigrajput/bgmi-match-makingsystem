@@ -103,7 +103,7 @@ export default async function TournamentsPage({
               href={f.value === 'all' ? '/tournaments' : `/tournaments?status=${f.value}`}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'inline-flex min-h-11 items-center rounded-input border px-3 text-sm transition-colors duration-150',
+                'inline-flex min-h-11 min-w-11 items-center justify-center rounded-input border px-3 text-sm transition-colors duration-150',
                 active
                   ? 'border-accent/50 bg-accent/10 text-accent'
                   : 'border-border text-muted hover:border-border-strong hover:text-fg',
