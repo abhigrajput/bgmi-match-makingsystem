@@ -27,18 +27,18 @@ const initialState: ActionResult | null = null;
  * notice for a release.
  */
 const ROLE_LABELS: Record<PlayerRole, string> = {
-  igl: 'IGL — in-game leader, shotcalling and rotations',
-  assaulter: 'Assaulter — entry fragger',
-  sniper: 'Sniper — long range and DMR',
-  support: 'Support — utility, revives, resupply',
-  flex: 'Flex — fills whichever slot the squad lacks',
+  igl: 'IGL: in-game leader, shotcalling and rotations',
+  assaulter: 'Assaulter: entry fragger',
+  sniper: 'Sniper: long range and DMR',
+  support: 'Support: utility, revives, resupply',
+  flex: 'Flex: fills whichever slot the squad lacks',
 };
 
 const COMM_LABELS: Record<CommPreference, string> = {
   voice_required: 'Voice required',
   voice_optional: 'Voice optional',
   text_only: 'Text only',
-  silent: 'Silent — no comms',
+  silent: 'Silent: no comms',
 };
 
 /**
@@ -160,7 +160,7 @@ export function PreferencesForm({
           ))}
         </select>
         <p id="comm_preference-hint" className="mt-1 text-xs text-muted">
-          A hard filter, not a preference score — you will not be grouped with
+          A hard filter, not a preference score: you will not be grouped with
           players whose comms requirement conflicts with yours.
         </p>
         <FieldError
@@ -173,7 +173,7 @@ export function PreferencesForm({
         <legend className="text-sm font-medium text-fg">Teammate skill band</legend>
         <p className="mt-1 text-xs text-muted">
           The 0–100 rating range you will accept in teammates. Leave it wide
-          unless you have a reason to narrow it — a narrow band means longer
+          unless you have a reason to narrow it: a narrow band means longer
           waits, and an inverted one means no match is possible.
         </p>
 
@@ -264,7 +264,7 @@ export function PreferencesForm({
           className={fieldClass}
         />
         <p id="max_ping_ms-hint" className="mt-1 text-xs text-muted">
-          Milliseconds. Leave blank for no limit — 0 is not “no limit”, it is a
+          Milliseconds. Leave blank for no limit: 0 is not “no limit”, it is a
           limit nothing can meet.
         </p>
         <FieldError id="max_ping_ms-error" messages={fieldErrors?.max_ping_ms} />

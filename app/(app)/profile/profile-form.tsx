@@ -94,7 +94,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           className={fieldClass}
         />
         <p id="bgmi_ign-hint" className="mt-1 text-xs text-muted">
-          Must be unique, and must match your name in BGMI — it is how match
+          Must be unique, and must match your name in BGMI: it is how match
           records are matched back to you.
         </p>
         <FieldError id="bgmi_ign-error" messages={fieldErrors?.bgmi_ign} />

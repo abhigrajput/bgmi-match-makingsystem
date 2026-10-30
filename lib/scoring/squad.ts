@@ -268,7 +268,7 @@ export function describeSquad(
     reasons.push(
       `Weakest link: ${weakest.a.ign} & ${weakest.b.ign} (${Math.round(weakest.result.score * 100)})` +
         (weakest.result.reasons.length > 0
-          ? ` — ${weakest.result.reasons[weakest.result.reasons.length - 1]}`
+          ? `: ${weakest.result.reasons[weakest.result.reasons.length - 1]}`
           : ''),
     );
   }

@@ -42,7 +42,7 @@ export function FeedbackForm({
   }, [state, rateeIgn, toast]);
 
   if (state?.ok) {
-    return <p className="text-sm text-success">Thanks — your rating for {rateeIgn} is saved.</p>;
+    return <p className="text-sm text-success">Thanks, your rating for {rateeIgn} is saved.</p>;
   }
 
   const fieldErrors = state && !state.ok ? state.fieldErrors : undefined;

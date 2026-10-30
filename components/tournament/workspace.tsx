@@ -151,7 +151,7 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
   const registration =
     status !== 'open' ? (
       <p className="text-sm text-muted">
-        Registration is closed{me.registered ? ' — you are in this tournament.' : '.'}
+        Registration is closed{me.registered ? ', you are in this tournament.' : '.'}
       </p>
     ) : me.registered ? (
       <div className="flex flex-wrap items-center gap-3">
@@ -188,7 +188,7 @@ export function TournamentWorkspace({ slug, status, squadSize, isSeed, players, 
             <option value="">My usual role</option>
             {PLAYER_ROLES.map((r) => (
               <option key={r} value={r}>
-                {ROLE_LABELS[r]} — {ROLE_DESCRIPTIONS[r]}
+                {ROLE_LABELS[r]}: {ROLE_DESCRIPTIONS[r]}
               </option>
             ))}
           </Select>

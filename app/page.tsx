@@ -19,11 +19,9 @@ import {
   Swords,
   Trophy,
   UserPlus,
-  Users,
 } from 'lucide-react';
 
 import { ButtonLink } from '@/components/ui/button';
-import { loadPublicStats } from '@/lib/public-stats';
 import { APP_NAME } from '@/lib/site';
 import { createClient, isSupabaseUnreachable } from '@/lib/supabase/server';
 
@@ -112,12 +110,7 @@ const FEATURES = [
 const TEAM = ['Abhishek GR', 'Shivakumar SH', 'Aishwarya YH', 'Aniketana SD'];
 
 export default async function HomePage() {
-  // When middleware already waited on Supabase and got nothing, the stats strip
-  // is skipped (it hides on null) rather than waiting a second time.
-  const [signedIn, stats] = await Promise.all([
-    isSignedIn(),
-    isSupabaseUnreachable() ? null : loadPublicStats(),
-  ]);
+  const signedIn = await isSignedIn();
 
   return (
     <div className="min-h-screen bg-bg">
@@ -182,29 +175,6 @@ export default async function HomePage() {
               )}
             </div>
 
-            {/*
-              Hidden entirely when the counts cannot be read. Printing zeros on
-              a failed query would state something false about the product.
-            */}
-            {stats ? (
-              <dl className="mt-12 grid max-w-2xl grid-cols-3 divide-x divide-border rounded-card border border-border bg-surface">
-                {[
-                  { label: 'Players', value: stats.players, icon: Users },
-                  { label: 'Tournaments', value: stats.tournaments, icon: Trophy },
-                  { label: 'Squads formed', value: stats.squads_formed, icon: Swords },
-                ].map((item) => (
-                  <div key={item.label} className="px-4 py-4 md:px-6">
-                    <dt className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted">
-                      <item.icon aria-hidden="true" className="h-3.5 w-3.5" />
-                      {item.label}
-                    </dt>
-                    <dd className="mt-1 font-mono text-2xl font-semibold tabular text-fg md:text-3xl">
-                      {item.value.toLocaleString('en-IN')}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            ) : null}
           </div>
         </section>
 

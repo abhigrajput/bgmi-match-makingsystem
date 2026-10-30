@@ -16,7 +16,7 @@ const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', displ
 
 export const metadata: Metadata = {
   title: {
-    default: `${APP_NAME} — ${APP_TAGLINE}`,
+    default: `${APP_NAME}: ${APP_TAGLINE}`,
     template: `%s · ${APP_NAME}`,
   },
   description:

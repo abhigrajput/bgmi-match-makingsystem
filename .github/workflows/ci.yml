@@ -33,6 +33,8 @@ jobs:
         run: npx tsc --noEmit --incremental false
       - name: Lint
         run: npx next lint
+      - name: Design check
+        run: node scripts/check-design.mjs
       - name: Test
         run: npx vitest run
       - name: Build
