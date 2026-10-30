@@ -246,6 +246,24 @@ select count(*) as policies from pg_policies where schemaname = 'public';
 ```
 Local results: both functions as expected; trigger `O` on `users`; 11 and 11; 23.
 
+## Migration 0009: contact messages and rate limits
+Adds `contact_messages` (anon and authenticated insert, organiser read, no update or delete) and `rate_limits` (no policy, reached only through `rate_limit_hit()`). Additive: no existing table or function changes, so the deployed app is unaffected until code uses it. Expected catalog after: 13 tables, 25 policies.
+
+Proven on the local stack first, by `scripts/test-migration-0009.ts`: 13/13 checks after apply, a second apply succeeded, rollback left 0 tables and 0 functions, 13/13 again after reapply.
+
+Rollback, in this order:
+
+```sql
+drop function if exists public.rate_limit_hit(text, integer, integer);
+drop policy if exists contact_messages_insert on public.contact_messages;
+drop policy if exists contact_messages_organiser_read on public.contact_messages;
+drop function if exists public.contact_messages_under_cap();
+drop table if exists public.rate_limits;
+drop table if exists public.contact_messages;
+```
+
+Rollback deletes any stored contact messages. Export them first if there are any.
+
 ## Workflows
 - `keep-alive.yml`: no secrets, `permissions: {}`.
 - `auth-health.yml`: the repository is **public** (GitHub API: `"visibility": "public"`), so the scheduled job holds no service role key. It runs `auth-health.ts --anon`: `/api/health`, `/login`, signed-out `/dashboard` redirect. With the optional repository variables `SUPABASE_URL` and `SUPABASE_ANON_KEY` (public values) it also checks the auth server and that anon is refused `schema_health()` and `profiles`.

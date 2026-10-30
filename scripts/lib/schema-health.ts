@@ -3,8 +3,8 @@
  * Shared by scripts/verify-prod.ts and scripts/auth-health.ts.
  */
 
-export const EXPECTED_PUBLIC_TABLES = 11;
-export const EXPECTED_POLICY_COUNT = 23;
+export const EXPECTED_PUBLIC_TABLES = 13;
+export const EXPECTED_POLICY_COUNT = 25;
 
 export type SchemaHealth = {
   handle_new_user: { exists: boolean; security_definer: boolean; search_path_pinned: boolean } | null;
