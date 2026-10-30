@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -21,23 +22,27 @@ import { createClient } from '@/lib/supabase/server';
  * reintroduce the CSRF above.
  */
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  // Without Supabase settings there is nothing to revoke, but the cookies below
+  // are still cleared.
+  if (missingSupabaseConfig().length === 0) {
+    const supabase = createClient();
 
-  // getUser() before signOut() so that a request with no valid session does not
-  // trigger a pointless token revocation call to the auth server. It is also
-  // the honest check: signOut() on an absent session succeeds, which would make
-  // this route look like it did something when it did not.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    // getUser() before signOut() so that a request with no valid session does not
+    // trigger a pointless token revocation call to the auth server. It is also
+    // the honest check: signOut() on an absent session succeeds, which would make
+    // this route look like it did something when it did not.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (user) {
-    // Scope 'local' clears the session on this device only. The alternative,
-    // 'global', revokes every refresh token for the account and signs the user
-    // out of their phone as well -- correct for a "sign out everywhere" control
-    // the user deliberately chose, wrong for the ordinary sign-out button,
-    // which they expect to affect the browser they clicked it in.
-    await supabase.auth.signOut({ scope: 'local' });
+    if (user) {
+      // Scope 'local' clears the session on this device only. The alternative,
+      // 'global', revokes every refresh token for the account and signs the user
+      // out of their phone as well -- correct for a "sign out everywhere" control
+      // the user deliberately chose, wrong for the ordinary sign-out button,
+      // which they expect to affect the browser they clicked it in.
+      await supabase.auth.signOut({ scope: 'local' });
+    }
   }
 
   // Drops any cached render produced for the signed-in user, so the next
@@ -45,9 +50,19 @@ export async function POST(request: NextRequest) {
   revalidatePath('/', 'layout');
 
   // 303 rather than the default 307. A 307 preserves the method, so the browser
-  // would re-issue this POST against /login. 303 is the status that means
+  // would re-issue this POST against /. 303 is the status that means
   // "your POST is done, now GET this other thing", which is exactly the case.
-  return NextResponse.redirect(new URL('/login', request.url), {
+  const response = NextResponse.redirect(new URL('/', request.url), {
     status: 303,
   });
+
+  // Cleared here as well as by signOut(): when Supabase is unreachable getUser()
+  // finds no user, signOut() never runs, and the browser would keep the session.
+  for (const { name } of request.cookies.getAll()) {
+    if (name.startsWith('sb-') && name.includes('-auth-token')) {
+      response.cookies.delete(name);
+    }
+  }
+
+  return response;
 }

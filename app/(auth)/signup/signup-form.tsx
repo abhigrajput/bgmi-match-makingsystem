@@ -3,9 +3,13 @@
 import { useFormState } from 'react-dom';
 
 import { signup, type AuthFormState } from '../actions';
+import { ResendConfirmation } from '../resend-confirmation';
 import { FieldError } from '@/components/form/field-error';
 import { SubmitButton } from '@/components/form/submit-button';
 import { fieldClass } from '@/components/ui/input';
+import { ROLE_LABELS } from '@/lib/roles';
+import { SIGNUP_REGIONS } from '@/lib/validation/auth';
+import { PLAYER_ROLES } from '@/types/database';
 
 const initialState: AuthFormState = {};
 
@@ -28,12 +32,15 @@ export function SignupForm() {
   // resubmitting now would only collide with the account just created.
   if (state.notice) {
     return (
-      <p
-        role="status"
-        className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
-      >
-        {state.notice}
-      </p>
+      <>
+        <p
+          role="status"
+          className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
+        >
+          {state.notice}
+        </p>
+        {state.unconfirmedEmail ? <ResendConfirmation email={state.unconfirmedEmail} /> : null}
+      </>
     );
   }
 
@@ -99,6 +106,66 @@ export function SignupForm() {
         <FieldError id="bgmi_ign-error" messages={state.fieldErrors?.bgmi_ign} />
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="region" className="mb-1.5 block text-sm font-medium text-fg">
+            Region
+          </label>
+          <select
+            id="region"
+            name="region"
+            required
+            defaultValue={state.values?.region ?? ''}
+            aria-describedby={state.fieldErrors?.region ? 'region-error' : 'region-hint'}
+            aria-invalid={state.fieldErrors?.region ? true : undefined}
+            className={fieldClass}
+          >
+            <option value="" disabled>
+              Choose a region
+            </option>
+            {SIGNUP_REGIONS.map((region) => (
+              <option key={region} value={region}>
+                {region.replace('-', ' ')}
+              </option>
+            ))}
+          </select>
+          <p id="region-hint" className="mt-1 text-xs text-muted">
+            You are matched with players in the same region.
+          </p>
+          <FieldError id="region-error" messages={state.fieldErrors?.region} />
+        </div>
+
+        <div>
+          <label htmlFor="primary_role" className="mb-1.5 block text-sm font-medium text-fg">
+            Main role
+          </label>
+          <select
+            id="primary_role"
+            name="primary_role"
+            required
+            defaultValue={state.values?.primary_role ?? ''}
+            aria-describedby={
+              state.fieldErrors?.primary_role ? 'primary_role-error' : 'primary_role-hint'
+            }
+            aria-invalid={state.fieldErrors?.primary_role ? true : undefined}
+            className={fieldClass}
+          >
+            <option value="" disabled>
+              Choose a role
+            </option>
+            {PLAYER_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {ROLE_LABELS[role]}
+              </option>
+            ))}
+          </select>
+          <p id="primary_role-hint" className="mt-1 text-xs text-muted">
+            You confirm it with your other preferences after signing up.
+          </p>
+          <FieldError id="primary_role-error" messages={state.fieldErrors?.primary_role} />
+        </div>
+      </div>
+
       <div>
         <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-fg">
           Email
@@ -134,7 +201,7 @@ export function SignupForm() {
           className={fieldClass}
         />
         <p id="password-hint" className="mt-1 text-xs text-muted">
-          At least 8 characters.
+          At least 10 characters.
         </p>
         <FieldError id="password-error" messages={state.fieldErrors?.password} />
       </div>

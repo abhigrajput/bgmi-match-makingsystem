@@ -28,8 +28,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import type { User } from '@supabase/supabase-js';
+import { isAuthRetryableFetchError, type User } from '@supabase/supabase-js';
 
+import { fetchWithTimeout, withDeadline } from '@/lib/supabase/fetch-timeout';
 import type { Database } from '@/types/database';
 
 // See the note in client.ts on why these are literal expressions.
@@ -49,6 +50,14 @@ export interface SessionResult {
    * request carries no valid session.
    */
   user: User | null;
+
+  /**
+   * True when Supabase could not be asked: it timed out, refused the
+   * connection, or answered with a server error. `user` is null in that case,
+   * but it means "unknown", not "signed out", and callers must not treat the
+   * two the same.
+   */
+  unavailable: boolean;
 }
 
 /**
@@ -62,6 +71,7 @@ export interface SessionResult {
  */
 export async function updateSession(
   request: NextRequest,
+  timeoutMs: number,
 ): Promise<SessionResult> {
   // Seeded from the request so that request headers propagate to the route.
   // Reassigned inside setAll below -- that reassignment is invariant 1.
@@ -70,20 +80,17 @@ export async function updateSession(
   });
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    // Fail closed on auth, open on routing: report no user so protected
-    // prefixes redirect to /login, and let public pages render. Throwing here
-    // takes down every route, including ones that never touch Supabase.
-    console.error(
-      'Supabase middleware is missing configuration: NEXT_PUBLIC_SUPABASE_URL ' +
-        'and NEXT_PUBLIC_SUPABASE_ANON_KEY were not set at build time.',
-    );
-    return { response, user: null };
+    // Root middleware answers this case before calling here. Reported as
+    // unavailable rather than thrown: throwing takes down every route,
+    // including ones that never touch Supabase.
+    return { response, user: null, unavailable: true };
   }
 
   const supabase = createServerClient<Database>(
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     {
+      global: { fetch: fetchWithTimeout(timeoutMs) },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -119,11 +126,25 @@ export async function updateSession(
   // Invariant 2. This is also what triggers the refresh: if the access token
   // has expired, the library exchanges the refresh token here, which calls
   // setAll above.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  //
+  // Bounded twice: each request by the fetch above, and the whole call by the
+  // deadline, because a failed refresh is retried for up to 30 seconds.
+  try {
+    const {
+      data: { user },
+      error,
+    } = await withDeadline(supabase.auth.getUser(), timeoutMs);
 
-  return { response, user };
+    const unavailable =
+      error !== null &&
+      (isAuthRetryableFetchError(error) || (error.status ?? 0) >= 500);
+
+    return { response, user: unavailable ? null : user, unavailable };
+  } catch {
+    // The deadline, or anything else thrown on the way to the auth server.
+    // Either way nobody answered, which is the unavailable case.
+    return { response, user: null, unavailable: true };
+  }
 }
 
 /**
@@ -140,10 +161,11 @@ export function redirectWithSession(
   request: NextRequest,
   pathname: string,
   session: SessionResult,
+  search = '',
 ): NextResponse {
   const url = request.nextUrl.clone();
   url.pathname = pathname;
-  url.search = '';
+  url.search = search;
 
   const redirect = NextResponse.redirect(url);
 

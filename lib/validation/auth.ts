@@ -17,6 +17,8 @@
 
 import { z } from 'zod';
 
+import { PLAYER_ROLES, type PlayerRole } from '@/types/database';
+
 /**
  * Email is validated but never normalised beyond trimming. Lower-casing it
  * would be wrong: the local part of an address is case-sensitive per RFC 5321,
@@ -28,9 +30,9 @@ export const emailSchema = z
   .max(254, { message: 'Email address is too long.' });
 
 /**
- * Supabase enforces a 6-character minimum by default. 8 is used here because
- * the difference in friction is negligible and the difference in a brute-force
- * search space is four orders of magnitude.
+ * 10 characters minimum (launch hardening, 2026-10-30). Supabase's own minimum
+ * defaults to 6 and is raised in the dashboard to match (Task.md, needs user);
+ * until then this schema is what enforces it, for signup and password reset.
  *
  * No composition rules (an uppercase, a digit, a symbol). They push users
  * toward `Password1!` and measurably reduce entropy; length is the property
@@ -40,7 +42,7 @@ export const emailSchema = z
  */
 export const passwordSchema = z
   .string()
-  .min(8, { message: 'Password must be at least 8 characters.' })
+  .min(10, { message: 'Password must be at least 10 characters.' })
   .max(72, { message: 'Password must be 72 characters or fewer.' });
 
 /**
@@ -68,12 +70,16 @@ export const displayNameSchema = z
  * whole table at a moment in time, and any answer this schema could give would
  * already be stale. The UNIQUE constraint decides, handle_new_user() turns the
  * violation into a 23505, and the signup action maps that back onto this field.
+ *
+ * 20 characters maximum, down from 30 on 2026-10-30. The longest IGN on
+ * production that day was 16, so no existing player is locked out of saving
+ * their profile.
  */
 export const bgmiIgnSchema = z
   .string()
   .trim()
   .min(3, { message: 'In-game name must be at least 3 characters.' })
-  .max(30, { message: 'In-game name must be 30 characters or fewer.' })
+  .max(20, { message: 'In-game name must be 20 characters or fewer.' })
   .regex(/^[A-Za-z0-9._-]+$/, {
     message:
       'In-game name may contain only letters, numbers, dots, underscores and hyphens.',
@@ -88,11 +94,39 @@ export const loginSchema = z.object({
   password: z.string().min(1, { message: 'Enter your password.' }),
 });
 
+/**
+ * Regions offered at signup. profiles.region is free text and the profile page
+ * still accepts any value; signup offers a fixed list so new players land in a
+ * region other players actually share -- region is a hard filter before
+ * scoring, and a typo would leave someone matchable with nobody.
+ *
+ * The first three are the values on production (2026-10-30). India-East is
+ * added so players in the east are not forced into a wrong region (Task.md,
+ * ASSUMPTION).
+ */
+export const SIGNUP_REGIONS = ['India-North', 'India-South', 'India-East', 'India-West'] as const;
+
+export const signupRegionSchema = z.enum(SIGNUP_REGIONS, {
+  message: 'Choose your region.',
+});
+
+/**
+ * Built from PLAYER_ROLES like playerRoleSchema in ./player.ts, not imported
+ * from there: player.ts imports this module, and the cycle would leave one of
+ * the two schemas undefined at load time.
+ */
+const signupRoleSchema = z.enum(
+  PLAYER_ROLES as unknown as [PlayerRole, ...PlayerRole[]],
+  { message: 'Choose your main role.' },
+);
+
 export const signupSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   display_name: displayNameSchema,
   bgmi_ign: bgmiIgnSchema,
+  region: signupRegionSchema,
+  primary_role: signupRoleSchema,
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

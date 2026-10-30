@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { missingSupabaseConfig } from '@/lib/supabase/config';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -21,6 +22,10 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
+
+  if (missingSupabaseConfig().length > 0) {
+    return NextResponse.redirect(`${origin}/login?error=service`);
+  }
 
   const code = searchParams.get('code');
 

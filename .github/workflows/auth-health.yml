@@ -1,0 +1,42 @@
+# Daily public check that the app and its auth path are up.
+#
+# Uses NO secrets. This repository is public, so the service role key stays out
+# of GitHub Actions entirely. The full check, which creates a real account and
+# reads the catalog, is a manual local script:
+#
+#   npx tsx scripts/auth-health.ts --target prod
+#
+# Optional repository variables (not secrets; both values are public):
+#   HEALTH_URL         overrides the production URL
+#   SUPABASE_URL       with SUPABASE_ANON_KEY, adds the auth server check and
+#   SUPABASE_ANON_KEY  proves anon is refused the catalog and player tables
+#
+# Scheduled workflows run only from the default branch, so this starts after the
+# PR merges. Run it by hand from the Actions tab to test it.
+name: Auth health
+
+on:
+  schedule:
+    - cron: '41 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HEALTH_URL: ${{ vars.HEALTH_URL || 'https://bgmi-match-makingsystem.vercel.app' }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run public auth checks
+        run: npx tsx scripts/auth-health.ts --anon --base "$HEALTH_URL"

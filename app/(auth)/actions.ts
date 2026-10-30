@@ -13,11 +13,19 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 
-import { createClient } from '@/lib/supabase/server';
-import { loginSchema, signupSchema } from '@/lib/validation/auth';
+import {
+  AUTH_FORM_MESSAGES,
+  classifyAuthError,
+  logAuthFailure,
+  type AuthFailure,
+} from '@/lib/auth/errors';
+import { siteUrl } from '@/lib/site';
+import { missingSupabaseConfig } from '@/lib/supabase/config';
+import { createClient, createEmailLinkClient } from '@/lib/supabase/server';
+import { emailSchema, loginSchema, signupSchema } from '@/lib/validation/auth';
 
 /**
  * What a form action hands back to `useFormState`.
@@ -36,6 +44,10 @@ export interface AuthFormState {
   notice?: string;
   /** Echoed back so the user does not retype everything after a failure. */
   values?: Partial<Record<string, string>>;
+  /** Set when the account still needs confirming: the form offers a resend. */
+  unconfirmedEmail?: string;
+  /** Seconds before another confirmation email can be requested. */
+  retryAfter?: number;
 }
 
 /**
@@ -65,6 +77,10 @@ export async function login(
     };
   }
 
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable, values: { email: parsed.data.email } };
+  }
+
   const supabase = createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -74,18 +90,30 @@ export async function login(
 
   if (error) {
     /**
-     * One message for every failure mode, attached to the form rather than to
-     * a field. Distinguishing "no such account" from "wrong password" turns
-     * this form into an account-enumeration oracle: an attacker submits a list
-     * of email addresses and learns which ones are registered, which is a
-     * finding on its own and the first step of a credential-stuffing run.
+     * Attached to the form rather than to a field. Wrong email and wrong
+     * password share one message: distinguishing "no such account" from "wrong
+     * password" turns this form into an account-enumeration oracle.
      *
-     * The real error is not logged either -- Supabase's message can contain
-     * the submitted address.
+     * But an outage or a rate limit is NOT a wrong password, and saying so
+     * sends users with correct credentials off to reset them (Task.md, H).
+     * Those get their own messages. Kinds that cannot arise from a sign-in
+     * fall back to the generic one.
      */
+    const kind = classifyAuthError(error);
+    logAuthFailure('login', kind, error);
+
+    const loginKinds = new Set<AuthFailure>([
+      'invalid_credentials',
+      'email_not_confirmed',
+      'rate_limited',
+      'service_unavailable',
+    ]);
+
     return {
-      formError: 'Incorrect email or password.',
+      formError: AUTH_FORM_MESSAGES[loginKinds.has(kind) ? kind : 'unknown'],
       values: { email: parsed.data.email },
+      // Only reachable with the correct password, so it discloses nothing.
+      unconfirmedEmail: kind === 'email_not_confirmed' ? parsed.data.email : undefined,
     };
   }
 
@@ -106,12 +134,16 @@ export async function signup(
     password: String(formData.get('password') ?? ''),
     display_name: String(formData.get('display_name') ?? ''),
     bgmi_ign: String(formData.get('bgmi_ign') ?? ''),
+    region: String(formData.get('region') ?? ''),
+    primary_role: String(formData.get('primary_role') ?? ''),
   };
 
   const echo = {
     email: raw.email,
     display_name: raw.display_name,
     bgmi_ign: raw.bgmi_ign,
+    region: raw.region,
+    primary_role: raw.primary_role,
   };
 
   const parsed = signupSchema.safeParse(raw);
@@ -123,18 +155,17 @@ export async function signup(
     };
   }
 
-  const supabase = createClient();
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable, values: echo };
+  }
 
-  // Origin is read from the request rather than from NEXT_PUBLIC_APP_URL so
-  // that preview deployments and localhost each send a confirmation link back
-  // to themselves instead of to production.
-  const origin = headers().get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const supabase = createClient();
 
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: `${siteUrl()}/auth/callback`,
 
       /**
        * This object becomes `raw_user_meta_data` on the new auth.users row,
@@ -150,58 +181,57 @@ export async function signup(
        * changing 0002 does not fail loudly: the trigger falls back to a
        * generated placeholder and the user silently gets the wrong IGN.
        */
+      //
+      // `region` is written to profiles.region by handle_new_user() from 0007
+      // on; before 0007 the trigger ignores it. `primary_role` is NOT written
+      // anywhere by the trigger: creating a preferences row would mark the
+      // player matchmaking-ready on defaults they never chose. It stays in
+      // metadata and pre-fills the preferences form (lib/player/queries.ts).
       data: {
         display_name: parsed.data.display_name,
         bgmi_ign: parsed.data.bgmi_ign,
+        region: parsed.data.region,
+        primary_role: parsed.data.primary_role,
       },
     },
   });
 
   if (error) {
     /**
-     * The bgmi_ign collision path.
+     * handle_new_user() raises 23505 for a taken IGN, which rolls back the
+     * auth.users insert with it -- no half-created account, and retrying with
+     * another name works. How that and the other failures are told apart is in
+     * lib/auth/errors.ts.
      *
-     * handle_new_user() raises SQLSTATE 23505 with a message naming the taken
-     * IGN, and that abort rolls back the auth.users insert with it -- so there
-     * is no half-created account and retrying with a different name works.
-     *
-     * Getting that error back out through GoTrue is the awkward part. It sits
-     * between the trigger and this code and does not preserve SQLSTATE, so the
-     * check has to cover both what it passes through and what it replaces the
-     * error with. `Database error saving new user` is GoTrue's generic wrapper
-     * for any exception raised by this trigger -- and since the IGN collision
-     * is the only failure the trigger raises by design, attributing it to that
-     * field is right far more often than a generic message would be.
+     * Problems the user fixes in one field are attached to that field. A
+     * duplicate email is attached to the email field because Supabase has
+     * already disclosed it -- hiding it would leave the user stuck. Everything
+     * else (rate limit, outage) is about the submission as a whole.
      */
-    const message = error.message ?? '';
-    const isIgnCollision =
-      message.includes('already taken') ||
-      message.includes('bgmi_ign') ||
-      message.includes('Database error saving new user');
+    const kind = classifyAuthError(error);
+    logAuthFailure('signup', kind, error);
 
-    if (isIgnCollision) {
-      return {
-        fieldErrors: {
-          bgmi_ign: [
-            'That in-game name is already taken. Choose another one.',
-          ],
-        },
-        values: echo,
-      };
-    }
+    const field =
+      kind === 'ign_taken'
+        ? 'bgmi_ign'
+        : kind === 'email_taken'
+          ? 'email'
+          : kind === 'weak_password'
+            ? 'password'
+            : null;
 
-    if (message.toLowerCase().includes('already registered')) {
-      // Supabase's own wording for a duplicate email. This one is attached to
-      // the field because Supabase has already disclosed it -- pretending
-      // otherwise would leave the user stuck with no idea what to change.
+    if (field) {
       return {
-        fieldErrors: { email: ['An account with this email already exists.'] },
+        fieldErrors: { [field]: [AUTH_FORM_MESSAGES[kind]] },
         values: echo,
       };
     }
 
     return {
-      formError: 'Could not create the account. Please try again.',
+      formError:
+        kind === 'rate_limited' || kind === 'service_unavailable'
+          ? AUTH_FORM_MESSAGES[kind]
+          : 'Could not create the account. Please try again.',
       values: echo,
     };
   }
@@ -221,9 +251,113 @@ export async function signup(
     return {
       notice:
         'Account created. Check your email for a confirmation link to finish signing in.',
+      unconfirmedEmail: parsed.data.email,
     };
   }
 
   revalidatePath('/', 'layout');
   redirect('/dashboard');
+}
+
+const RESEND_COOLDOWN_SECONDS = 60;
+const RESEND_COOKIE = 'resend_confirmation_after';
+
+/**
+ * Sends the confirmation email again.
+ *
+ * The cookie gives the form its countdown and stops double clicks. It is not
+ * the limit that matters, since a script can drop it: GoTrue enforces its own
+ * per-address and per-project email limits, and those come back as rate_limited.
+ *
+ * Unknown and already-confirmed addresses get the same answer as a real send,
+ * so this cannot be used to find out which emails have accounts.
+ */
+export async function resendConfirmation(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = emailSchema.safeParse(String(formData.get('email') ?? ''));
+  if (!parsed.success) return { formError: 'Enter a valid email address.' };
+
+  const cookieStore = cookies();
+  const waitUntil = Number(cookieStore.get(RESEND_COOKIE)?.value ?? 0);
+  const remaining = Math.ceil((waitUntil - Date.now()) / 1000);
+  if (remaining > 0) {
+    return {
+      formError: `Please wait ${remaining} seconds before asking again.`,
+      retryAfter: remaining,
+    };
+  }
+
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable };
+  }
+
+  const { error } = await createEmailLinkClient().auth.resend({
+    type: 'signup',
+    email: parsed.data,
+    options: { emailRedirectTo: `${siteUrl()}/auth/callback` },
+  });
+
+  if (error) {
+    const kind = classifyAuthError(error);
+    logAuthFailure('resend', kind, error);
+    if (kind === 'rate_limited' || kind === 'service_unavailable') {
+      return { formError: AUTH_FORM_MESSAGES[kind] };
+    }
+  }
+
+  cookieStore.set(RESEND_COOKIE, String(Date.now() + RESEND_COOLDOWN_SECONDS * 1000), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: RESEND_COOLDOWN_SECONDS,
+    path: '/',
+  });
+
+  return {
+    notice: 'If this account still needs confirming, a new link is on its way. Check your inbox and spam folder.',
+    retryAfter: RESEND_COOLDOWN_SECONDS,
+  };
+}
+
+/**
+ * Starts a password reset.
+ *
+ * The same notice whether or not the address has an account. The link lands on
+ * /reset-password, built from the configured site URL and never from request
+ * headers: a forged Host header must not get to choose where it points.
+ */
+export async function requestPasswordReset(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const raw = String(formData.get('email') ?? '');
+  const parsed = emailSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      fieldErrors: { email: ['Enter a valid email address.'] },
+      values: { email: raw },
+    };
+  }
+
+  if (missingSupabaseConfig().length > 0) {
+    return { formError: AUTH_FORM_MESSAGES.service_unavailable, values: { email: parsed.data } };
+  }
+
+  const { error } = await createEmailLinkClient().auth.resetPasswordForEmail(parsed.data, {
+    redirectTo: `${siteUrl()}/reset-password`,
+  });
+
+  if (error) {
+    const kind = classifyAuthError(error);
+    logAuthFailure('reset', kind, error);
+    if (kind === 'rate_limited' || kind === 'service_unavailable') {
+      return { formError: AUTH_FORM_MESSAGES[kind], values: { email: parsed.data } };
+    }
+  }
+
+  return {
+    notice: 'If that email has an account, a password reset link is on its way. Check your inbox and spam folder.',
+  };
 }

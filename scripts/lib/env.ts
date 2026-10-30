@@ -66,6 +66,30 @@ export function credentialsFor(target: Target): { url: string; serviceKey: strin
 }
 
 /** Service-role client. Bypasses RLS: scripts only, never app code. */
+/**
+ * The public anon key, for checks that must run as an anonymous caller.
+ * Production reads PROD_SUPABASE_ANON_KEY from .env.production.local and
+ * returns undefined when it is not set, so callers can say so instead of
+ * silently skipping.
+ */
+export function anonCredentialsFor(target: Target): { url: string; anonKey: string | undefined } {
+  const { url } = credentialsFor(target);
+  const env = parseEnvFile(target === 'local' ? '.env.local' : '.env.production.local');
+  const anonKey = target === 'local' ? env.NEXT_PUBLIC_SUPABASE_ANON_KEY : env.PROD_SUPABASE_ANON_KEY;
+  return { url, anonKey: anonKey || undefined };
+}
+
+/**
+ * The Vercel protection bypass for preview deployments: from the environment,
+ * or from .env.production.local. Undefined when neither has it. The scheduled
+ * workflow has no env file, so a missing file is not an error here.
+ */
+export function vercelBypass(): string | undefined {
+  if (process.env.VERCEL_BYPASS) return process.env.VERCEL_BYPASS;
+  if (!fs.existsSync(path.resolve(process.cwd(), '.env.production.local'))) return undefined;
+  return parseEnvFile('.env.production.local').VERCEL_BYPASS || undefined;
+}
+
 export function serviceClient(target: Target): SupabaseClient<Database> {
   const { url, serviceKey } = credentialsFor(target);
   return createClient<Database>(url, serviceKey, {

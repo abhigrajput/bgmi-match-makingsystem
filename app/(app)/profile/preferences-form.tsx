@@ -48,12 +48,15 @@ const COMM_LABELS: Record<CommPreference, string> = {
  * provisions a profile row and nothing else. The defaults below are then the
  * column defaults from 0001 rather than empty inputs, so the form shows what
  * the database would store if saved untouched -- which is what the player is
- * actually agreeing to when they press save.
+ * actually agreeing to when they press save. The one exception is the primary
+ * role, which starts at the role picked on the signup form when there is one.
  */
 export function PreferencesForm({
   preferences,
+  signupRole = null,
 }: {
   preferences: PlayerPreferences | null;
+  signupRole?: PlayerRole | null;
 }) {
   const [state, formAction] = useFormState(upsertPreferences, initialState);
 
@@ -87,7 +90,7 @@ export function PreferencesForm({
         <select
           id="primary_role"
           name="primary_role"
-          defaultValue={preferences?.primary_role ?? 'flex'}
+          defaultValue={preferences?.primary_role ?? signupRole ?? 'flex'}
           aria-describedby={
             fieldErrors?.primary_role ? 'primary_role-error' : undefined
           }

@@ -9,7 +9,33 @@ import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/ui/field-error';
 import { Input } from '@/components/ui/input';
 import { Hint, Label } from '@/components/ui/label';
+import { AUTH_FORM_MESSAGES, classifyAuthError } from '@/lib/auth/errors';
 import { createClient } from '@/lib/supabase/client';
+import { missingSupabaseConfig } from '@/lib/supabase/config';
+import { passwordSchema } from '@/lib/validation/auth';
+
+const COPY = {
+  invite: {
+    checking: 'Checking your invite…',
+    problemTitle: 'Invite link problem',
+    expired: 'This invite link has expired. Ask for a new one.',
+    unusable: 'This invite link could not be used. Ask for a new one.',
+    missing: 'This link is missing its sign-in details. Open the invite link from your email again.',
+    title: 'Set your password',
+    intro: 'Choose a password to finish setting up your account.',
+    submit: 'Save password and continue',
+  },
+  reset: {
+    checking: 'Checking your reset link…',
+    problemTitle: 'Reset link problem',
+    expired: 'This reset link has expired. Ask for a new one.',
+    unusable: 'This reset link could not be used. Ask for a new one.',
+    missing: 'This link is missing its sign-in details. Open the reset link from your email again.',
+    title: 'Choose a new password',
+    intro: 'Pick something you have not used here before.',
+    submit: 'Save new password',
+  },
+} as const;
 
 type Phase =
   | { kind: 'checking' }
@@ -28,8 +54,15 @@ type Phase =
  * The fragment is wiped from the address bar as soon as it is read, so the
  * tokens do not linger in history or leak through a copied URL.
  */
-export function AcceptInvite({ next }: { next: string }) {
+export function AcceptInvite({
+  next,
+  mode = 'invite',
+}: {
+  next: string;
+  mode?: keyof typeof COPY;
+}) {
   const router = useRouter();
+  const copy = COPY[mode];
   const [phase, setPhase] = useState<Phase>({ kind: 'checking' });
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -37,6 +70,13 @@ export function AcceptInvite({ next }: { next: string }) {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
+    // createClient() throws without configuration, which would replace this
+    // whole page with the framework's error screen.
+    if (missingSupabaseConfig().length > 0) {
+      setPhase({ kind: 'invalid', message: AUTH_FORM_MESSAGES.service_unavailable });
+      return;
+    }
+
     const supabase = createClient();
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -46,9 +86,7 @@ export function AcceptInvite({ next }: { next: string }) {
       if (linkError) {
         setPhase({
           kind: 'invalid',
-          message: /expired/i.test(linkError)
-            ? 'This invite link has expired. Ask for a new one.'
-            : 'This invite link could not be used. Ask for a new one.',
+          message: /expired/i.test(linkError) ? copy.expired : copy.unusable,
         });
         return;
       }
@@ -61,7 +99,14 @@ export function AcceptInvite({ next }: { next: string }) {
           refresh_token: refreshToken,
         });
         if (error || !data.user) {
-          setPhase({ kind: 'invalid', message: 'This invite link could not be used. Ask for a new one.' });
+          setPhase({ kind: 'invalid', message: copy.unusable });
+          return;
+        }
+        // A confirmation email resent through /auth/callback: the account
+        // already has a password, so signing in is all there is to do.
+        if (params.get('type') === 'signup' || params.get('type') === 'email') {
+          router.replace(next);
+          router.refresh();
           return;
         }
         setPhase({ kind: 'ready', email: data.user.email ?? null });
@@ -76,20 +121,23 @@ export function AcceptInvite({ next }: { next: string }) {
       else
         setPhase({
           kind: 'invalid',
-          message: 'This link is missing its sign-in details. Open the invite link from your email again.',
+          message: copy.missing,
         });
     }
 
     void run();
+    // Runs once: the fragment is wiped above, so a re-run would find no tokens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
     setFieldError(null);
     setFormError(null);
-    // Same rule as signup (lib/validation/auth.ts): at least 8 characters.
-    if (password.length < 8) {
-      setFieldError('Use at least 8 characters.');
+    // The same schema as signup, so the two rules cannot drift.
+    const checked = passwordSchema.safeParse(password);
+    if (!checked.success) {
+      setFieldError(checked.error.issues[0]?.message ?? 'Choose a longer password.');
       return;
     }
     if (password !== confirm) {
@@ -100,7 +148,14 @@ export function AcceptInvite({ next }: { next: string }) {
     setPhase({ kind: 'saving', email: phase.email });
     const { error } = await createClient().auth.updateUser({ password });
     if (error) {
-      setFormError('Could not save your password. Try again.');
+      const kind = classifyAuthError(error);
+      setFormError(
+        error.code === 'same_password'
+          ? 'That is your current password. Choose a different one.'
+          : kind === 'unknown'
+            ? 'Could not save your password. Try again.'
+            : AUTH_FORM_MESSAGES[kind],
+      );
       setPhase({ kind: 'ready', email: phase.email });
       return;
     }
@@ -111,7 +166,7 @@ export function AcceptInvite({ next }: { next: string }) {
   if (phase.kind === 'checking') {
     return (
       <p role="status" className="text-sm text-muted">
-        Checking your invite…
+        {copy.checking}
       </p>
     );
   }
@@ -119,7 +174,7 @@ export function AcceptInvite({ next }: { next: string }) {
   if (phase.kind === 'invalid') {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold text-fg">Invite link problem</h1>
+        <h1 className="text-xl font-semibold text-fg">{copy.problemTitle}</h1>
         <Banner tone="error">{phase.message}</Banner>
         <p className="text-sm text-muted">
           Already set a password?{' '}
@@ -135,14 +190,14 @@ export function AcceptInvite({ next }: { next: string }) {
   return (
     <form onSubmit={save} noValidate className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-fg">Set your password</h1>
+        <h1 className="text-xl font-semibold text-fg">{copy.title}</h1>
         <p className="mt-1 text-sm text-muted">
           {phase.email ? (
             <>
               You are signed in as <span className="text-fg">{phase.email}</span>.{' '}
             </>
           ) : null}
-          Choose a password to finish setting up your account.
+          {copy.intro}
         </p>
       </div>
 
@@ -159,7 +214,7 @@ export function AcceptInvite({ next }: { next: string }) {
           aria-invalid={fieldError ? true : undefined}
           aria-describedby="new-password-hint"
         />
-        <Hint id="new-password-hint">At least 8 characters.</Hint>
+        <Hint id="new-password-hint">At least 10 characters.</Hint>
       </div>
 
       <div>
@@ -177,7 +232,7 @@ export function AcceptInvite({ next }: { next: string }) {
       </div>
 
       <Button type="submit" className="w-full" loading={phase.kind === 'saving'}>
-        Save password and continue
+        {copy.submit}
       </Button>
     </form>
   );

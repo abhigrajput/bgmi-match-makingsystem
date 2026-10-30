@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { Banner } from '@/components/form/banner';
-import { createClient } from '@/lib/supabase/server';
+import { SERVICE_UNAVAILABLE_MESSAGE } from '@/lib/auth/errors';
+import { createClient, isSupabaseUnreachable } from '@/lib/supabase/server';
 
 import { LoginForm } from './login-form';
 
@@ -28,24 +29,35 @@ export default async function LoginPage({
 }: {
   searchParams: { error?: string };
 }) {
-  const supabase = createClient();
+  // Skipped when middleware already found Supabase unreachable: asking again
+  // would only add a second timeout before the same answer.
+  if (!isSupabaseUnreachable()) {
+    const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect('/dashboard');
+    if (user) {
+      redirect('/dashboard');
+    }
   }
 
-  // Set by /auth/callback when a confirmation link is expired, already used, or
-  // opened in a different browser than it was requested from. Matched against a
-  // known value rather than rendered, so that a crafted ?error= in the URL
-  // cannot put arbitrary text on our own login page.
-  const calloutError =
+  // Matched against known values rather than rendered, so that a crafted
+  // ?error= in the URL cannot put arbitrary text on our own login page.
+  //   auth_callback_failed: /auth/callback, for a confirmation link that is
+  //     expired, already used, or opened in a different browser.
+  //   service: middleware, when a protected page could not check the session
+  //     because Supabase did not answer.
+  const callout =
     searchParams.error === 'auth_callback_failed'
-      ? 'That sign-in link is no longer valid. Sign in with your email and password instead.'
-      : null;
+      ? {
+          tone: 'info' as const,
+          text: 'That sign-in link is no longer valid. Sign in with your email and password instead.',
+        }
+      : searchParams.error === 'service'
+        ? { tone: 'error' as const, text: SERVICE_UNAVAILABLE_MESSAGE }
+        : null;
 
   return (
     <>
@@ -54,15 +66,21 @@ export default async function LoginPage({
         Welcome back. Your squads are waiting.
       </p>
 
-      {calloutError ? (
-        <Banner tone="info" className="mb-4">
-          {calloutError}
+      {callout ? (
+        <Banner tone={callout.tone} className="mb-4">
+          {callout.text}
         </Banner>
       ) : null}
 
       <LoginForm />
 
-      <p className="mt-6 text-sm text-muted">
+      <p className="mt-4 text-sm">
+        <Link href="/forgot-password" className="font-medium text-data hover:underline">
+          Forgot your password?
+        </Link>
+      </p>
+
+      <p className="mt-2 text-sm text-muted">
         No account?{' '}
         <Link href="/signup" className="font-medium text-data hover:underline">
           Create one

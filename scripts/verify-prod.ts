@@ -12,7 +12,10 @@
  * counts per table; exits non-zero on any FAIL.
  */
 
-import { parseTarget, describeTarget, serviceClient } from './lib/env';
+import { createClient } from '@supabase/supabase-js';
+
+import { anonCredentialsFor, parseTarget, describeTarget, serviceClient } from './lib/env';
+import { evaluateSchemaHealth, type SchemaHealth } from './lib/schema-health';
 
 type Check = { name: string; ok: boolean; detail: string };
 
@@ -23,7 +26,7 @@ async function main() {
   const record = (name: string, error: { code?: string; message: string } | null, detail = '') =>
     checks.push({ name, ok: !error, detail: error ? `${error.code ?? ''} ${error.message}`.trim() : detail });
 
-  console.log(`Verifying 0005 on ${describeTarget(target)}\n`);
+  console.log(`Verifying schema on ${describeTarget(target)}\n`);
 
   // New tables, every column.
   {
@@ -80,6 +83,37 @@ async function main() {
   {
     const { data, error } = await db.rpc('analytics_overview');
     record('analytics_overview(): callable', error, data ? `keys ${Object.keys(data as object).length}` : '');
+  }
+
+  // Catalog facts through schema_health() (0008): the parts of check E that
+  // REST alone cannot see.
+  {
+    const { data, error } = await db.rpc('schema_health' as never); // 0008; not yet in types/database.ts
+    if (error) {
+      record('schema_health(): callable (0008)', error);
+    } else {
+      for (const c of evaluateSchemaHealth(data as SchemaHealth)) checks.push(c);
+    }
+  }
+  {
+    const { url, anonKey } = anonCredentialsFor(target);
+    if (!anonKey) {
+      checks.push({ name: 'schema_health() refused to anon', ok: false, detail: 'no anon key available for this target' });
+    } else {
+      const anon = createClient(url, anonKey, { auth: { persistSession: false } });
+      const { error } = await anon.rpc('schema_health');
+      checks.push({
+        name: 'schema_health() refused to anon',
+        ok: !!error,
+        detail: error ? error.code ?? '' : 'anon could read catalog metadata',
+      });
+      const { data: rows, error: profilesError } = await anon.from('profiles').select('id').limit(1);
+      checks.push({
+        name: 'profiles refused to anon',
+        ok: !!profilesError || (rows ?? []).length === 0,
+        detail: profilesError ? profilesError.code ?? '' : `${rows?.length ?? 0} rows returned`,
+      });
+    }
   }
 
   // Enum: an invalid status must be rejected by the type, not accepted.

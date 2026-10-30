@@ -8,6 +8,8 @@ Four layers, from fastest to most realistic. Commands assume the project root.
 | Catalog | paste `supabase/tests/phase_b_verify.sql` | Schema, grants, policies, triggers exist as designed |
 | REST schema | `npx tsx scripts/verify-prod.ts --target local\|prod` | Every new table/column/function reachable through PostgREST |
 | End to end | `npx tsx scripts/e2e-local.ts` | Real pages, API routes and RLS attacks with a real JWT |
+| Auth end to end | `npx tsx scripts/e2e-auth.ts --target local --base http://127.0.0.1:3000` | Real forms in headless Chrome: signup, sign in, sign out, expired-token refresh, password reset, resend confirmation |
+| Auth health | `npx tsx scripts/auth-health.ts --target prod [--base <url>]` | Auth server, catalog, a real account created and deleted. Daily in CI |
 
 CI (`.github/workflows/ci.yml`) runs typecheck, lint, unit tests and build on
 every push and pull request.
@@ -22,7 +24,7 @@ every push and pull request.
 | `app/api/__tests__/routes.test.ts` | 18 | Match route 401/403 (not an organiser)/404/409 (closed, too few, lost claim)/200 and rollback on failure; squads 401/200; reset 403 for non-organisers and real tournaments; complete 404 for non-participants, 409 abandoned, idempotent, timestamps |
 | `lib/__tests__/ui-helpers.test.ts` | 4 | `cn` merge, score bands, role vocabulary completeness |
 
-Total: **84 tests**. Fixtures are seeded (`seedrandom`), so every run uses the
+Total at the time of this table: **84 tests**; `npx vitest run` is the current count. Fixtures are seeded (`seedrandom`), so every run uses the
 same pools.
 
 ## 2. End to end (`scripts/e2e-local.ts`)
