@@ -32,12 +32,14 @@ An earlier run the same day found both migrations absent. They have since been a
 | Step | Result |
 |---|---|
 | `verify-prod --target prod` | 22/23, exit 1. Only FAIL: `schema_health() refused to anon`, because `PROD_SUPABASE_ANON_KEY` is not set, so `profiles refused to anon` did not run either. PASS: 11 tables all with RLS, 23 policies, `handle_new_user()` exists, is `SECURITY DEFINER`, pins `search_path`, trigger enabled, every definer function pins `search_path`. 201 profiles, 624 matches, unchanged |
-| `auth-health --target prod --base <72mxkmync preview>` | 14 PASS, 2 FAIL, exit 1. PASS includes region saved (India-South), sign in, test user and profile deleted (0 rows left). FAIL: deployment `/api/health` and `/login`, HTTP 302 from Vercel Authentication, because `VERCEL_BYPASS` is not set |
+| `auth-health --target prod --base <in1zp0trc preview>` | 14 PASS, 2 FAIL, exit 1 (same result on `72mxkmync`). PASS includes region saved (India-South), sign in, test user and profile deleted (0 rows left). FAIL: deployment `/api/health` and `/login`, HTTP 302 from Vercel Authentication, because `VERCEL_BYPASS` is not set |
 | `e2e-auth --target prod` on the preview | **Not run.** No bypass, so it could not reach the app |
 | Playwright at 375 and 1440 px | **Not run.** Same reason. Console errors, failed requests and overflow are unknown on the preview |
-| Preview `dpl_4aVzigeD3Aw9UxhdFtDD7mdVud9d` (1921652), through the Vercel connector | `/api/health` 200 `{"status":"ok","database":"ok"}`, so the anon key is in this build. `/`, `/login`, `/signup`, `/forgot-password` all 200. No JavaScript was run, so this says nothing about layout or console |
+| Preview `dpl_2tbkGZbAUtF5xS4FeH23iNuFXeLP` (ff542e3, has the fix), through the Vercel connector | `/api/health` 200 `{"status":"ok","database":"ok"}`, so the anon key is in this build |
+| Preview `dpl_4aVzigeD3Aw9UxhdFtDD7mdVud9d` (1921652, before the fix), through the Vercel connector | `/api/health` 200. `/`, `/login`, `/signup`, `/forgot-password` all 200. No JavaScript was run, so this says nothing about layout or console |
+| Production auth users after these runs | 1 total, 0 throwaway. 201 profiles |
 
-Vercel made no deployment for 12269e2 in the 12 minutes after that push (no status on the commit, none in the deployment list, none queued or failed). The runs above used 1921652, which has the anon key but not the fix below. That fix changes behaviour only when settings are missing.
+Vercel made no deployment for 12269e2 in the 12 minutes after that push (no status on the commit, none in the deployment list, none queued or failed). The cause is unknown. The next push, ff542e3, built normally and contains the same code.
 
 Build without `NEXT_PUBLIC_SUPABASE_ANON_KEY`, local production build, not a deployment:
 
@@ -50,14 +52,14 @@ Build without `NEXT_PUBLIC_SUPABASE_ANON_KEY`, local production build, not a dep
 | `POST /auth/signout` | 500 | 303 `/` |
 | `/`, `/forgot-password`, `/reset-password`, `/accept-invite` | 200 | 200 |
 
-After the fix, submitting the login and forgot-password forms shows the service message, `/reset-password` shows it instead of the error screen, and the browser reported 0 page errors. `lib/api/auth.ts` now answers 503 for API routes in this state; that path has no test.
+After the fix, submitting the login and forgot-password forms shows the service message, `/reset-password` shows it instead of the error screen, and the browser reported 0 page errors. A deployment with the key cannot exercise this path, so it remains proven on the local build only. `lib/api/auth.ts` now answers 503 for API routes in this state; that path has no test.
 
 Found along the way:
 - Vercel functions run in `iad1`, the database in `ap-south-1`, so every query crosses that distance. Not measured.
-- The Vercel connector creates or reuses temporary share links on the previews it fetches (`qwn5shuaa`, `72mxkmync`). They expire in 23 hours and work for anyone with the URL.
+- The Vercel connector creates or reuses temporary share links on the previews it fetches (`qwn5shuaa`, `72mxkmync`, `in1zp0trc`). They expire in 23 hours and work for anyone with the URL.
 
 ## Not verified yet
-- **The fix for missing settings on a deployment:** 12269e2 has not been built by Vercel.
+- **The fix for missing settings on a deployment:** proven on a local no-key build only.
 - **`e2e-auth` and the Playwright viewport check on any preview:** both need `VERCEL_BYPASS`.
 - **Anon refused `schema_health` and `profiles` on production:** needs `PROD_SUPABASE_ANON_KEY`.
 - **New code on production:** nothing from this branch is deployed there.
