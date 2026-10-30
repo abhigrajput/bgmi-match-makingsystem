@@ -45,9 +45,19 @@ export async function POST(request: NextRequest) {
   revalidatePath('/', 'layout');
 
   // 303 rather than the default 307. A 307 preserves the method, so the browser
-  // would re-issue this POST against /login. 303 is the status that means
+  // would re-issue this POST against /. 303 is the status that means
   // "your POST is done, now GET this other thing", which is exactly the case.
-  return NextResponse.redirect(new URL('/login', request.url), {
+  const response = NextResponse.redirect(new URL('/', request.url), {
     status: 303,
   });
+
+  // Cleared here as well as by signOut(): when Supabase is unreachable getUser()
+  // finds no user, signOut() never runs, and the browser would keep the session.
+  for (const { name } of request.cookies.getAll()) {
+    if (name.startsWith('sb-') && name.includes('-auth-token')) {
+      response.cookies.delete(name);
+    }
+  }
+
+  return response;
 }

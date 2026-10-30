@@ -13,7 +13,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 
 import {
@@ -22,8 +22,9 @@ import {
   logAuthFailure,
   type AuthFailure,
 } from '@/lib/auth/errors';
-import { createClient } from '@/lib/supabase/server';
-import { loginSchema, signupSchema } from '@/lib/validation/auth';
+import { siteUrl } from '@/lib/site';
+import { createClient, createEmailLinkClient } from '@/lib/supabase/server';
+import { emailSchema, loginSchema, signupSchema } from '@/lib/validation/auth';
 
 /**
  * What a form action hands back to `useFormState`.
@@ -42,6 +43,10 @@ export interface AuthFormState {
   notice?: string;
   /** Echoed back so the user does not retype everything after a failure. */
   values?: Partial<Record<string, string>>;
+  /** Set when the account still needs confirming: the form offers a resend. */
+  unconfirmedEmail?: string;
+  /** Seconds before another confirmation email can be requested. */
+  retryAfter?: number;
 }
 
 /**
@@ -102,6 +107,8 @@ export async function login(
     return {
       formError: AUTH_FORM_MESSAGES[loginKinds.has(kind) ? kind : 'unknown'],
       values: { email: parsed.data.email },
+      // Only reachable with the correct password, so it discloses nothing.
+      unconfirmedEmail: kind === 'email_not_confirmed' ? parsed.data.email : undefined,
     };
   }
 
@@ -145,16 +152,11 @@ export async function signup(
 
   const supabase = createClient();
 
-  // Origin is read from the request rather than from NEXT_PUBLIC_APP_URL so
-  // that preview deployments and localhost each send a confirmation link back
-  // to themselves instead of to production.
-  const origin = headers().get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? '';
-
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: `${siteUrl()}/auth/callback`,
 
       /**
        * This object becomes `raw_user_meta_data` on the new auth.users row,
@@ -240,9 +242,105 @@ export async function signup(
     return {
       notice:
         'Account created. Check your email for a confirmation link to finish signing in.',
+      unconfirmedEmail: parsed.data.email,
     };
   }
 
   revalidatePath('/', 'layout');
   redirect('/dashboard');
+}
+
+const RESEND_COOLDOWN_SECONDS = 60;
+const RESEND_COOKIE = 'resend_confirmation_after';
+
+/**
+ * Sends the confirmation email again.
+ *
+ * The cookie gives the form its countdown and stops double clicks. It is not
+ * the limit that matters, since a script can drop it: GoTrue enforces its own
+ * per-address and per-project email limits, and those come back as rate_limited.
+ *
+ * Unknown and already-confirmed addresses get the same answer as a real send,
+ * so this cannot be used to find out which emails have accounts.
+ */
+export async function resendConfirmation(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = emailSchema.safeParse(String(formData.get('email') ?? ''));
+  if (!parsed.success) return { formError: 'Enter a valid email address.' };
+
+  const cookieStore = cookies();
+  const waitUntil = Number(cookieStore.get(RESEND_COOKIE)?.value ?? 0);
+  const remaining = Math.ceil((waitUntil - Date.now()) / 1000);
+  if (remaining > 0) {
+    return {
+      formError: `Please wait ${remaining} seconds before asking again.`,
+      retryAfter: remaining,
+    };
+  }
+
+  const { error } = await createEmailLinkClient().auth.resend({
+    type: 'signup',
+    email: parsed.data,
+    options: { emailRedirectTo: `${siteUrl()}/auth/callback` },
+  });
+
+  if (error) {
+    const kind = classifyAuthError(error);
+    logAuthFailure('resend', kind, error);
+    if (kind === 'rate_limited' || kind === 'service_unavailable') {
+      return { formError: AUTH_FORM_MESSAGES[kind] };
+    }
+  }
+
+  cookieStore.set(RESEND_COOKIE, String(Date.now() + RESEND_COOLDOWN_SECONDS * 1000), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: RESEND_COOLDOWN_SECONDS,
+    path: '/',
+  });
+
+  return {
+    notice: 'If this account still needs confirming, a new link is on its way. Check your inbox and spam folder.',
+    retryAfter: RESEND_COOLDOWN_SECONDS,
+  };
+}
+
+/**
+ * Starts a password reset.
+ *
+ * The same notice whether or not the address has an account. The link lands on
+ * /reset-password, built from the configured site URL and never from request
+ * headers: a forged Host header must not get to choose where it points.
+ */
+export async function requestPasswordReset(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const raw = String(formData.get('email') ?? '');
+  const parsed = emailSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      fieldErrors: { email: ['Enter a valid email address.'] },
+      values: { email: raw },
+    };
+  }
+
+  const { error } = await createEmailLinkClient().auth.resetPasswordForEmail(parsed.data, {
+    redirectTo: `${siteUrl()}/reset-password`,
+  });
+
+  if (error) {
+    const kind = classifyAuthError(error);
+    logAuthFailure('reset', kind, error);
+    if (kind === 'rate_limited' || kind === 'service_unavailable') {
+      return { formError: AUTH_FORM_MESSAGES[kind], values: { email: parsed.data } };
+    }
+  }
+
+  return {
+    notice: 'If that email has an account, a password reset link is on its way. Check your inbox and spam folder.',
+  };
 }

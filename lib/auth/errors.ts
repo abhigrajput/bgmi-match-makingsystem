@@ -104,7 +104,7 @@ export const AUTH_FORM_MESSAGES: Record<AuthFailure, string> = {
  * Server-side log line for a failed auth call. Kind, status and code only:
  * never the message (it can contain the email) and never the input.
  */
-export function logAuthFailure(action: 'login' | 'signup', kind: AuthFailure, error: AuthErrorLike) {
+export function logAuthFailure(action: 'login' | 'signup' | 'resend' | 'reset', kind: AuthFailure, error: AuthErrorLike) {
   if (kind === 'invalid_credentials') return; // Expected, not an incident.
   console.error(
     JSON.stringify({

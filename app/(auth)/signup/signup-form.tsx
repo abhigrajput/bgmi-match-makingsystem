@@ -3,6 +3,7 @@
 import { useFormState } from 'react-dom';
 
 import { signup, type AuthFormState } from '../actions';
+import { ResendConfirmation } from '../resend-confirmation';
 import { FieldError } from '@/components/form/field-error';
 import { SubmitButton } from '@/components/form/submit-button';
 import { fieldClass } from '@/components/ui/input';
@@ -31,12 +32,15 @@ export function SignupForm() {
   // resubmitting now would only collide with the account just created.
   if (state.notice) {
     return (
-      <p
-        role="status"
-        className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
-      >
-        {state.notice}
-      </p>
+      <>
+        <p
+          role="status"
+          className="rounded-input border border-success/40 bg-success/10 px-3 py-2.5 text-sm text-success"
+        >
+          {state.notice}
+        </p>
+        {state.unconfirmedEmail ? <ResendConfirmation email={state.unconfirmedEmail} /> : null}
+      </>
     );
   }
 

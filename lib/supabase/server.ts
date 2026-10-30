@@ -21,6 +21,7 @@
 
 import { cookies, headers } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 import {
   fetchWithTimeout,
@@ -53,6 +54,30 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
  * to another. That failure is silent and catastrophic, which is why there is no
  * singleton export here.
  */
+/**
+ * A cookie-less client for asking Supabase to email a link.
+ *
+ * Implicit flow on purpose. The cookie client below uses PKCE, whose links only
+ * work in the browser that requested them, so a reset requested on a laptop and
+ * opened on a phone would fail. These links carry the session in the URL
+ * fragment, which /reset-password and /accept-invite read in the browser.
+ */
+export function createEmailLinkClient() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+  }
+
+  return createSupabaseClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      flowType: 'implicit',
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+    global: { fetch: fetchWithTimeout(SERVER_FETCH_TIMEOUT_MS) },
+  });
+}
+
 export function createClient() {
   /**
    * Read before the configuration check, and the order matters.
