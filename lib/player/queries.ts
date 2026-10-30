@@ -20,11 +20,13 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import type {
-  PlayerAvailability,
-  PlayerPreferences,
-  PlayerStats,
-  Profile,
+import {
+  PLAYER_ROLES,
+  type PlayerAvailability,
+  type PlayerPreferences,
+  type PlayerRole,
+  type PlayerStats,
+  type Profile,
 } from '@/types/database';
 
 export type PlayerOverview = {
@@ -35,6 +37,12 @@ export type PlayerOverview = {
   availability: PlayerAvailability[];
   /** null = no stats row. Read-only to the player; see PlayerStatsPanel. */
   stats: PlayerStats | null;
+  /**
+   * The main role picked on the signup form, kept in auth user metadata. Only
+   * a default for the preferences form until the player saves preferences;
+   * null when absent or not a valid role (metadata is user-controlled).
+   */
+  signupRole: PlayerRole | null;
 };
 
 /**
@@ -121,6 +129,7 @@ export async function loadPlayerOverview(): Promise<PlayerOverviewResult> {
       // A stats error is not worth failing the page over: the panel shows
       // "no ratings yet", which is also what an unscored player sees.
       stats: statsResult.data ?? null,
+      signupRole: PLAYER_ROLES.find((role) => role === user.user_metadata?.primary_role) ?? null,
     },
   };
 }

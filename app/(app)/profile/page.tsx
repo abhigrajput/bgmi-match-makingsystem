@@ -64,7 +64,7 @@ export default async function ProfilePage() {
     return <StatePanel title="Could not load your profile" body={result.message} />;
   }
 
-  const { profile, preferences, availability, stats } = result.overview;
+  const { profile, preferences, availability, stats, signupRole } = result.overview;
 
   const completeness = computeCompleteness({
     preferences,
@@ -124,7 +124,7 @@ export default async function ProfilePage() {
             </div>
           </CardHeader>
           <CardBody>
-            <PreferencesForm preferences={preferences} />
+            <PreferencesForm preferences={preferences} signupRole={signupRole} />
           </CardBody>
         </Card>
       </div>

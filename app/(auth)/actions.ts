@@ -122,12 +122,16 @@ export async function signup(
     password: String(formData.get('password') ?? ''),
     display_name: String(formData.get('display_name') ?? ''),
     bgmi_ign: String(formData.get('bgmi_ign') ?? ''),
+    region: String(formData.get('region') ?? ''),
+    primary_role: String(formData.get('primary_role') ?? ''),
   };
 
   const echo = {
     email: raw.email,
     display_name: raw.display_name,
     bgmi_ign: raw.bgmi_ign,
+    region: raw.region,
+    primary_role: raw.primary_role,
   };
 
   const parsed = signupSchema.safeParse(raw);
@@ -166,9 +170,17 @@ export async function signup(
        * changing 0002 does not fail loudly: the trigger falls back to a
        * generated placeholder and the user silently gets the wrong IGN.
        */
+      //
+      // `region` is written to profiles.region by handle_new_user() from 0007
+      // on; before 0007 the trigger ignores it. `primary_role` is NOT written
+      // anywhere by the trigger: creating a preferences row would mark the
+      // player matchmaking-ready on defaults they never chose. It stays in
+      // metadata and pre-fills the preferences form (lib/player/queries.ts).
       data: {
         display_name: parsed.data.display_name,
         bgmi_ign: parsed.data.bgmi_ign,
+        region: parsed.data.region,
+        primary_role: parsed.data.primary_role,
       },
     },
   });
