@@ -92,10 +92,10 @@ Credentials: `PROD_SUPABASE_ANON_KEY` came from the Supabase Management API. An 
 
 `auth-health` and `e2e-auth` read `VERCEL_BYPASS` from `.env.production.local` as well as the environment.
 
-## Autonomous run, state at 2026-10-30 21:21
+## Autonomous run
 **Stage A: merged.** Merge commit 051fc5c on `main`, production deployment `dpl_Azq6fPXa8StvN4fH6oXMhiRcYark`. On the production URL: `verify-prod` 24/24, `auth-health` 16/16, `e2e-auth` 27/27; 1 auth user and 201 profiles before and after. PR #1 shows merged. `gh` is not logged in, so neither workflow was triggered.
 
-**Stage B: paused, not merged.** Branch `fix/design-polish`. Paused because the machine ran low on memory: the system stopped the hosted run and asked that it not be restarted without the user's say-so.
+**Stage B.** Branch `fix/design-polish`. Stage C was cancelled by the user: this is a college project. It is replaced by a small `fix/legal-min`.
 
 | Step | State |
 |---|---|
@@ -105,10 +105,11 @@ Credentials: `PROD_SUPABASE_ANON_KEY` came from the Supabase Management API. An 
 | 7 `_rsc` aborts | Explained, below |
 | 8 `/contact`, 0009 | Done. 0009 applied to production after the local proof: 13 tables, 25 policies, 13/13 behaviour checks |
 | 9 Gates at 1f52ea7 | tsc 0; vitest 171 in 15 files; lint clean; `check-design` 0; local `e2e-auth` 37/37; local `check-ui` and `e2e-contact` pass. On preview `bgmi-match-makingsystem-8156zbxnh`: `verify-prod` 24/24, `e2e-auth` 27/27, `e2e-contact` passes |
-| 9 Still to run | `check-ui` on the preview in Chromium, Firefox and WebKit (Firefox and WebKit are installed); Lighthouse mobile |
+| 9 Chromium `check-ui` on preview 331ef62 | 55/55: 0 console errors, failed requests, overflow or targets under 44 px, across 84 loads |
+| 9 Lighthouse mobile, `/` on the same preview | Performance 99, Accessibility 96, Best Practices 100, SEO 58. LCP 1.9 s, TBT 0 ms, CLS 0. Low audits: `color-contrast`, `is-crawlable`, `robots-txt` |
+| 9 Dropped by the user | Firefox, WebKit, Lighthouse on other pages. Not run |
 | 10 Merge | Not done |
 
-After the stop: 1 auth user, 0 throwaway, 201 profiles, 0 contact messages, 0 contact counters on production. No Stage C work has started.
 
 ### The two `_rsc` ERR_ABORTED prefetches
 Harmless. Measured on production with Chrome's own network events, 20 prefetches over 8 loads: every aborted request had already received HTTP 200 over h2, and the client cancelled it 1 to 5 ms later (`canceled=true`). 5 of 20 aborted, all to dynamic routes (`x-vercel-cache: MISS`); `/forgot-password`, the one static route (`HIT`), never did. None retried. Links followed after load reached their page 8 of 8 times. Page close is ruled out: they also abort with the page held open for 8 s. Which line of client code cancels them is not established. A run wrapping `AbortController.abort` and the stream cancel methods recorded no calls, but that run also had no aborts, so it settles nothing.
@@ -121,7 +122,7 @@ Harmless. Measured on production with Chrome's own network events, 20 prefetches
 - `rate_limit_hit()` is callable by anon, since the anon client is what the form uses. A direct caller can add counter rows, which are pruned after a day.
 
 ### Needs the user
-- `RATE_LIMIT_SALT` on Vercel, Production and Preview, any long random value. Auto mode refused to let the agent write it. Without it the limiter still works, but its IP hashes are unsalted.
+- `RATE_LIMIT_SALT` on Vercel Preview, if wanted. Production is set by the user. Without it the limiter still works, but its IP hashes are unsalted.
 - `gh auth login`, or run the keep-alive and auth-health workflows from the GitHub Actions tab.
 
 ## Not verified yet
