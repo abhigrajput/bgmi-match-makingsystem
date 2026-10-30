@@ -92,6 +92,38 @@ Credentials: `PROD_SUPABASE_ANON_KEY` came from the Supabase Management API. An 
 
 `auth-health` and `e2e-auth` read `VERCEL_BYPASS` from `.env.production.local` as well as the environment.
 
+## Autonomous run, state at 2026-10-30 21:21
+**Stage A: merged.** Merge commit 051fc5c on `main`, production deployment `dpl_Azq6fPXa8StvN4fH6oXMhiRcYark`. On the production URL: `verify-prod` 24/24, `auth-health` 16/16, `e2e-auth` 27/27; 1 auth user and 201 profiles before and after. PR #1 shows merged. `gh` is not logged in, so neither workflow was triggered.
+
+**Stage B: paused, not merged.** Branch `fix/design-polish`. Paused because the machine ran low on memory: the system stopped the hosted run and asked that it not be restarted without the user's say-so.
+
+| Step | State |
+|---|---|
+| 1 `check-design` | Done, in CI. 19 real violations found and fixed: 17 em dashes, 1 `rounded-full` filter link, the landing page's seeded counts |
+| 2 Tap targets | Done locally: 0 under 44 px on 84 page loads, public and signed in |
+| 3 to 6 Icons, error pages, SEO, footer, menu | Done locally. No horizontal scroll at 320, 375, 414, 768, 1024, 1440. Menu focus trap passes |
+| 7 `_rsc` aborts | Explained, below |
+| 8 `/contact`, 0009 | Done. 0009 applied to production after the local proof: 13 tables, 25 policies, 13/13 behaviour checks |
+| 9 Gates at 1f52ea7 | tsc 0; vitest 171 in 15 files; lint clean; `check-design` 0; local `e2e-auth` 37/37; local `check-ui` and `e2e-contact` pass. On preview `bgmi-match-makingsystem-8156zbxnh`: `verify-prod` 24/24, `e2e-auth` 27/27, `e2e-contact` passes |
+| 9 Still to run | `check-ui` on the preview in Chromium, Firefox and WebKit (Firefox and WebKit are installed); Lighthouse mobile |
+| 10 Merge | Not done |
+
+After the stop: 1 auth user, 0 throwaway, 201 profiles, 0 contact messages, 0 contact counters on production. No Stage C work has started.
+
+### The two `_rsc` ERR_ABORTED prefetches
+Harmless. Measured on production with Chrome's own network events, 20 prefetches over 8 loads: every aborted request had already received HTTP 200 over h2, and the client cancelled it 1 to 5 ms later (`canceled=true`). 5 of 20 aborted, all to dynamic routes (`x-vercel-cache: MISS`); `/forgot-password`, the one static route (`HIT`), never did. None retried. Links followed after load reached their page 8 of 8 times. Page close is ruled out: they also abort with the page held open for 8 s. Which line of client code cancels them is not established. A run wrapping `AbortController.abort` and the stream cancel methods recorded no calls, but that run also had no aborts, so it settles nothing.
+
+### Assumptions
+- The landing page's player, tournament and squad counts count seeded demo rows (200 of 201 profiles), so they were removed as fake metrics. `/api/public-stats` still serves them.
+- The social card is a static PNG, because `next/og` failed to prerender on this path with `Invalid URL`.
+- A checkbox's tap target includes its label.
+- Contact messages have a cap of 200 an hour in the insert policy, because the anon key can call PostgREST without the form and its per-IP limit.
+- `rate_limit_hit()` is callable by anon, since the anon client is what the form uses. A direct caller can add counter rows, which are pruned after a day.
+
+### Needs the user
+- `RATE_LIMIT_SALT` on Vercel, Production and Preview, any long random value. Auto mode refused to let the agent write it. Without it the limiter still works, but its IP hashes are unsalted.
+- `gh auth login`, or run the keep-alive and auth-health workflows from the GitHub Actions tab.
+
 ## Not verified yet
 - **The fix for missing settings on a deployment:** proven on a local no-key build only.
 - **New code on production:** nothing from this branch is deployed there.
