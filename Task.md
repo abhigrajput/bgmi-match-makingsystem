@@ -6,7 +6,7 @@ This file is longer than the two-screen target because the migration safety sect
 ## Progress (2026-10-30)
 | Item | Status | Evidence |
 |---|---|---|
-| Phase 1: diagnosis | Done, except prod catalog | Table below. Trigger proven by behaviour on prod; `SECURITY DEFINER`, `search_path`, RLS and policy count on prod wait for 0008 |
+| Phase 1: diagnosis | Done | Table below. Prod catalog read through `schema_health()` on 2026-10-30, see "Production check" |
 | Phase 2.1 middleware | Done | Local hang and refused-connection tests, below |
 | Phase 2.2 signup validation, error mapping | Done | e2e, Vitest |
 | Phase 2.3 login mapping | Done | e2e, Vitest |
@@ -18,41 +18,49 @@ This file is longer than the two-screen target because the migration safety sect
 | Phase 2.9 `scripts/auth-health.ts` + schedule | Done, scheduled job is anon-only | See "Workflows" |
 | Phase 2.10 keep-alive + `/api/health` | Done, starts after merge | Local 200 up, 503 down, 200 recovered |
 | Phase 2.11 tests | Done | Below |
-| Migrations 0007, 0008 on production | **Not applied, checked 2026-10-30** | 0007: a real account saved region NULL. 0008: `PGRST202`. See "Production check" |
+| Migrations 0007, 0008 on production | Applied, verified 2026-10-30 | 0007: a real account saved region India-South. 0008: `schema_health()` answers. See "Production check" |
+| Build without Supabase settings | Done locally | Reproduced 500s, then a no-key production build. See "Production check" |
 | Phases 3 to 6 | Not started | |
 
-Gates at the final commit: `tsc --noEmit` exit 0; `vitest run` 122 passed in 9 files; `next lint` no warnings or errors; `scripts/e2e-auth.ts --target local` 37/37 (includes cleanup: 2/2 users deleted, 0 profile rows left).
+Gates at 12269e2: `tsc --noEmit` exit 0; `vitest run` 134 passed in 10 files; `next lint` no warnings or errors; `scripts/e2e-auth.ts --target local` 37/37 (includes cleanup: 2/2 users deleted, 0 profile rows left).
 
 Production, before this branch was deployed anywhere: `verify-prod` 15/15 and `e2e-auth` 11/11 against the old deployment on 2026-10-30 (test user deleted).
 
-## Production check (2026-10-30, after the user reported migrations applied)
-Real output. The report and the observed state disagree on both migrations and on the preview redeploy.
+## Production check (2026-10-30, second run)
+An earlier run the same day found both migrations absent. They have since been applied by the user. Real output below.
 
 | Step | Result |
 |---|---|
-| `verify-prod --target prod` | 15/17, exit 1. Fails: `schema_health()` `PGRST202`; anon check could not run, `PROD_SUPABASE_ANON_KEY` not set. Row counts unchanged: 201 profiles, 624 matches |
-| `auth-health --target prod --base <preview>` | 6 PASS, 4 FAIL, exit 1. PASS: auth server (HTTP 200, 565 ms), create user, trigger created profile, sign in, delete user, profile deleted. FAIL: `schema_health()` `PGRST202`; region saved (null); deployment `/api/health` and `/login` (HTTP 302) |
-| `e2e-auth` on the preview | **Not run.** The preview cannot serve auth pages (below), so it would prove nothing |
-| Playwright at 375 and 1440 px | **Not run**, same reason |
-| Leftover test users on production | 0 of 1 auth users match; 201 profiles |
+| `verify-prod --target prod` | 22/23, exit 1. Only FAIL: `schema_health() refused to anon`, because `PROD_SUPABASE_ANON_KEY` is not set, so `profiles refused to anon` did not run either. PASS: 11 tables all with RLS, 23 policies, `handle_new_user()` exists, is `SECURITY DEFINER`, pins `search_path`, trigger enabled, every definer function pins `search_path`. 201 profiles, 624 matches, unchanged |
+| `auth-health --target prod --base <72mxkmync preview>` | 14 PASS, 2 FAIL, exit 1. PASS includes region saved (India-South), sign in, test user and profile deleted (0 rows left). FAIL: deployment `/api/health` and `/login`, HTTP 302 from Vercel Authentication, because `VERCEL_BYPASS` is not set |
+| `e2e-auth --target prod` on the preview | **Not run.** No bypass, so it could not reach the app |
+| Playwright at 375 and 1440 px | **Not run.** Same reason. Console errors, failed requests and overflow are unknown on the preview |
+| Preview `dpl_4aVzigeD3Aw9UxhdFtDD7mdVud9d` (1921652), through the Vercel connector | `/api/health` 200 `{"status":"ok","database":"ok"}`, so the anon key is in this build. `/`, `/login`, `/signup`, `/forgot-password` all 200. No JavaScript was run, so this says nothing about layout or console |
 
-Causes:
-- **0007 is not on production.** The trigger read the metadata (it built the profile from the IGN) but saved region NULL. This runs in the database, so it cannot be a PostgREST cache effect. The same check passes locally.
-- **0008 is not reachable.** `PGRST202` means not applied or a stale schema cache; REST cannot tell which.
-- **The preview was not rebuilt.** The newest deployment, `dpl_FBfgiZFQgx83Lg6hFf5a9HfgiVvJ`, is a Production redeploy of `main` at 9948f4b. Preview `dpl_49qqeYfNx4Vh28tEis2m7nWUFSYk` is older. Fetched through the Vercel connector: `/api/health` 503 `misconfigured`, `/login` 500. The anon key is on Preview now, but `NEXT_PUBLIC_*` is compiled at build time.
-- **The preview is behind Vercel Authentication.** Scripts get HTTP 302. `e2e-auth` and `auth-health` accept `VERCEL_BYPASS` for this.
+Vercel made no deployment for 12269e2 in the 12 minutes after that push (no status on the commit, none in the deployment list, none queued or failed). The runs above used 1921652, which has the anon key but not the fix below. That fix changes behaviour only when settings are missing.
+
+Build without `NEXT_PUBLIC_SUPABASE_ANON_KEY`, local production build, not a deployment:
+
+| Route | Before | After |
+|---|---|---|
+| `/login`, `/signup` | 500 | 200 |
+| `/api/health` | 503 `misconfigured` | 503, also `"missing":["NEXT_PUBLIC_SUPABASE_ANON_KEY"]` |
+| `/dashboard`, with or without a cookie | 307 `/login` | 307 `/login?error=service` |
+| `/auth/callback?code=x` | 500 | 307 `/login?error=service` |
+| `POST /auth/signout` | 500 | 303 `/` |
+| `/`, `/forgot-password`, `/reset-password`, `/accept-invite` | 200 | 200 |
+
+After the fix, submitting the login and forgot-password forms shows the service message, `/reset-password` shows it instead of the error screen, and the browser reported 0 page errors. `lib/api/auth.ts` now answers 503 for API routes in this state; that path has no test.
 
 Found along the way:
-- `auth-health` followed redirects, so a protected preview would have passed on Vercel's login page. Fixed with `redirect: 'manual'`.
-- A build without the anon key returns 500 on `/login`, because the server client throws. Middleware fails open in that state but the page does not. Not fixed.
 - Vercel functions run in `iad1`, the database in `ap-south-1`, so every query crosses that distance. Not measured.
-- The Vercel connector may have created a temporary share link on the preview (expires in 23 hours, viewable by anyone with the URL) while fetching the two routes above.
+- The Vercel connector creates or reuses temporary share links on the previews it fetches (`qwn5shuaa`, `72mxkmync`). They expire in 23 hours and work for anyone with the URL.
 
 ## Not verified yet
-- **Migrations 0007 and 0008 on production:** checked and absent, see above.
+- **The fix for missing settings on a deployment:** 12269e2 has not been built by Vercel.
+- **`e2e-auth` and the Playwright viewport check on any preview:** both need `VERCEL_BYPASS`.
+- **Anon refused `schema_health` and `profiles` on production:** needs `PROD_SUPABASE_ANON_KEY`.
 - **New code on production:** nothing from this branch is deployed there.
-- **The preview with the anon key:** no such build exists yet. So `e2e-auth` and the Playwright viewport check against the preview are both still open.
-- **`/api/health` against the production database:** not yet exercised from any deployment.
 - **Real email delivery on the hosted project.** Forgot-password and resend were exercised with real messages only on the local mail catcher. On a hosted target the e2e uses a generated recovery link instead, to avoid mailing a fake address and spending the 2-per-hour limit.
 - **Resend on hosted:** autoconfirm is on, so production never produces an unconfirmed account today.
 - **Expired token:** simulated by setting `expires_at` in the past in the session cookie, with a genuine refresh token, on a dev server. Not an actual hour-old session and not a production build.
@@ -228,8 +236,7 @@ Harness notes, because an earlier run had 5 FAILs and a later one hung:
 - ASSUMPTION: `India-East` is offered at signup alongside the three regions on production, so players there are not forced into a wrong one.
 
 ## Needs the user
-1. Apply 0007 then 0008 on production, using the steps above, and run the verification queries. Checked and absent on 2026-10-30.
-2. Vercel: the anon key is on Preview, but the preview deployment needs a rebuild. Also add a Protection Bypass for Automation, and set its value locally as `VERCEL_BYPASS`.
+2. Vercel: add a Protection Bypass for Automation, and set its value locally as `VERCEL_BYPASS`.
 4. `.env.production.local`: add `PROD_SUPABASE_ANON_KEY`, so `verify-prod --target prod` can prove anon is refused.
 5. Optional: repository variables `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
 6. Phase 5 answers: minimum age, governing law and jurisdiction, operator name and contact email.
